@@ -14,6 +14,7 @@ export default function AppRoutes() {
         <Route path="mapa-colombia" element={<MapaColombia />} />
         <Route path="sistema-solar" element={<SistemaSolar />} />
       </Route>
+      <Route path="/sistema-solar-full" element={<SistemaSolar />} />
     </Routes>
   );
 }
