@@ -27,7 +27,9 @@ export default function MapaColombia() {
       u.lang = 'es-CO'; u.rate = 1; u.pitch = 1; u.volume = 1;
       synth.cancel();
       synth.speak(u);
-    } catch {}
+    } catch (error) {
+      console.error('speakDepartamento error', error);
+    }
   };
 
   useEffect(() => {
@@ -36,7 +38,9 @@ export default function MapaColombia() {
       try {
         const parsed = JSON.parse(last) as Departamento;
         setSeleccion(parsed);
-      } catch {}
+      } catch (error) {
+        console.error('Error al parsear selección previa', error);
+      }
     }
   }, []);
 
@@ -204,7 +208,9 @@ export default function MapaColombia() {
                       const b = sh.getBBox();
                       const d = centerDist(tBox!, b);
                       if (d < bestD) { bestD = d; bestEl = sh; }
-                    } catch {}
+                    } catch (error) {
+                      console.error('shapeEls getBBox error', error);
+                    }
                   });
                   if (bestEl && bestD < 120) {
                     const el = bestEl as SVGGraphicsElement;
@@ -214,7 +220,9 @@ export default function MapaColombia() {
                   }
                 });
               }
-            } catch {}
+            } catch (error) {
+              console.error('object onload wiring error', error);
+            }
             setSvgDisponible(true);
             setSvgLoaded(true);
           };
@@ -357,7 +365,9 @@ export default function MapaColombia() {
                     sh.setAttribute('data-dept', li.dep!.id);
                     assigned = true; break;
                   }
-                } catch {}
+                } catch (error) {
+                  console.error('isPointInFill error', error);
+                }
               }
             }
             if (assigned) return;
@@ -493,14 +503,16 @@ export default function MapaColombia() {
                   if (labelCenter) { ax = labelCenter.x; ay = labelCenter.y; }
                   else if (tBox) { ax = tBox.x + tBox.width/2; ay = tBox.y + tBox.height/2; }
                   let bestD = Infinity;
-                  (idMatches as SVGGraphicsElement[]).forEach((el) => {
-                    try {
-                      const bb = el.getBBox();
-                      const bx = bb.x + bb.width/2; const by = bb.y + bb.height/2;
-                      const d = Math.hypot(ax - bx, ay - by);
-                      if (d < bestD) { bestD = d; chosen = el; }
-                    } catch {}
-                  });
+                (idMatches as SVGGraphicsElement[]).forEach((el) => {
+                  try {
+                    const bb = el.getBBox();
+                    const bx = bb.x + bb.width/2; const by = bb.y + bb.height/2;
+                    const d = Math.hypot(ax - bx, ay - by);
+                    if (d < bestD) { bestD = d; chosen = el; }
+                  } catch (error) {
+                    console.error('idMatches getBBox error', error);
+                  }
+                });
                 }
                 if (!chosen) { chosen = (idMatches as SVGGraphicsElement[])[0] || null; }
                 if (chosen) { targetShapes = [chosen]; }
@@ -541,7 +553,9 @@ export default function MapaColombia() {
                     const bb = el.getBBox();
                     const area = bb.width * bb.height;
                     if (area < minArea) { minArea = area; chosen = el; }
-                  } catch {}
+                  } catch (error) {
+                    console.error('bogotaPaths getBBox error', error);
+                  }
                 });
                 if (chosen) targetShapes = [chosen];
               }
@@ -564,7 +578,9 @@ export default function MapaColombia() {
                     const bx = bb.x + bb.width/2; const by = bb.y + bb.height/2;
                     const d = Math.hypot(ax - bx, ay - by);
                     if (d < bestD) { bestD = d; chosen = el; }
-                  } catch {}
+                  } catch (error) {
+                    console.error('targetShapes getBBox error', error);
+                  }
                 });
               }
               if (chosen) targetShapes = [chosen]; else targetShapes = [targetShapes[0]] as SVGGraphicsElement[];
@@ -611,7 +627,9 @@ export default function MapaColombia() {
                           const bx = bb.x + bb.width/2; const by = bb.y + bb.height/2;
                           const d = Math.hypot(ax - bx, ay - by);
                           if (d < bestD) { bestD = d; chosen = el; }
-                        } catch {}
+                        } catch (error) {
+                          console.error('candidates getBBox error', error);
+                        }
                       });
                     }
                     if (chosen) { targetShapes = [chosen]; }
@@ -637,11 +655,13 @@ export default function MapaColombia() {
                     const dy = ay - by;
                     const d = Math.sqrt(dx * dx + dy * dy);
                     if (d < bestD) { bestD = d; bestEl = sh; }
-                  } catch {}
+                  } catch (error) {
+                    console.error('shapesAll getBBox error', error);
+                  }
                 });
               }
               if (bestEl) {
-                let maxDim = 0; try { const bb = (bestEl as SVGGraphicsElement).getBBox(); maxDim = Math.max(bb.width, bb.height); } catch {}
+                let maxDim = 0; try { const bb = (bestEl as SVGGraphicsElement).getBBox(); maxDim = Math.max(bb.width, bb.height); } catch (error) { console.error('bestEl getBBox error', error); }
                 const depHardLimit = new Set(['magdalena','atlantico','bolivar','cordoba','sucre']);
                 const depExtraRelax = new Set(['atlantico','sucre']);
                 const base = Math.min(40, maxDim * 0.5);
@@ -671,8 +691,10 @@ export default function MapaColombia() {
                   const gx = labelCenter ? labelCenter.x : (tb ? tb.x + tb.width/2 : 0);
                   const gy = labelCenter ? labelCenter.y : (tb ? tb.y + tb.height/2 : 0);
                   let bestD = Infinity;
-                  childShapes.forEach((s)=>{ try { const bs = s.getBBox(); const dx = gx - (bs.x+bs.width/2); const dy = gy - (bs.y+bs.height/2); const d = Math.hypot(dx,dy); if (d < bestD) { bestD = d; chosen = s; } } catch {} });
-                } catch {}
+                  childShapes.forEach((s)=>{ try { const bs = s.getBBox(); const dx = gx - (bs.x+bs.width/2); const dy = gy - (bs.y+bs.height/2); const d = Math.hypot(dx,dy); if (d < bestD) { bestD = d; chosen = s; } } catch (error) { console.error('childShapes getBBox error', error); } });
+                } catch (error) {
+                  console.error('parentGroup inline selection error', error);
+                }
                 (chosen ? [chosen] : targetShapes).forEach((sh) => sh.classList.add('dept-selected'));
               } else {
                 // Si no hay grupo padre, resaltar solamente las formas seleccionadas
@@ -686,6 +708,7 @@ export default function MapaColombia() {
 
         // Auto-etiquetado reemplazado por asignación global arriba
       } catch (e) {
+        console.error('fetchSvg error; fallback to <object> mode', e);
         // Fallback: insertar como <object> embebido si el fetch o el parse fallan
         const container = svgContainerRef.current;
         if (!container) { setSvgDisponible(false); return; }
@@ -812,7 +835,7 @@ export default function MapaColombia() {
                   if (best && best.depId) {
                     // Umbral más estricto para departamentos conflictivos
                     let maxDim = 0;
-                    try { const bb = sh.getBBox(); maxDim = Math.max(bb.width, bb.height); } catch {}
+                    try { const bb = sh.getBBox(); maxDim = Math.max(bb.width, bb.height); } catch (error) { console.error('shapesForAssign getBBox error', error); }
                     const base = Math.min(40, maxDim * 0.5);
                     const depHardLimit = new Set(['magdalena','atlantico','bolivar','cordoba','sucre']);
                     const depExtraTight = new Set(['atlantico','sucre']);
@@ -822,7 +845,9 @@ export default function MapaColombia() {
                     if (bestD <= threshold) sh.setAttribute('data-dept', best.depId);
                   }
                 });
-              } catch {}
+              } catch (error) {
+                console.error('Asignación data-dept (object) error', error);
+              }
 
               const nodes = Array.from(doc.querySelectorAll<SVGElement>("path, polygon, polyline, g[data-dept]"))
                 .filter((el) => {
@@ -882,7 +907,9 @@ export default function MapaColombia() {
                           sh.setAttribute('data-dept', li.dep!.id);
                           assignedLocal = true; break;
                         }
-                      } catch {}
+                      } catch (error) {
+                        console.error('isPointInFill error during local assignment', error);
+                      }
                     }
                   }
                   if (assignedLocal) return;
@@ -904,7 +931,9 @@ export default function MapaColombia() {
                     if (bestD <= threshold) sh.setAttribute('data-dept', bestId);
                   }
                 });
-              } catch {}
+              } catch (error) {
+                console.error('Asignación estricta data-dept (object) error', error);
+              }
               textEls.forEach((t) => {
                 const label = (t.textContent || '').trim();
                 const next = t.nextElementSibling as SVGTextElement | null;
@@ -964,7 +993,9 @@ export default function MapaColombia() {
                           const by = bb.y + bb.height / 2;
                           const d = Math.hypot(ax - bx, ay - by);
                           if (d < bestD) { bestD = d; chosen = el; }
-                        } catch {}
+                        } catch (error) {
+                          console.error('idMatches getBBox error', error);
+                        }
                       });
                     }
                     if (!chosen) { chosen = (idMatches as SVGGraphicsElement[])[0] || null; }
@@ -1017,7 +1048,9 @@ export default function MapaColombia() {
                                 const by = bb.y + bb.height / 2;
                                 const d = Math.hypot(ax - bx, ay - by);
                                 if (d < bestD) { bestD = d; chosen = el; }
-                              } catch {}
+                              } catch (error) {
+                                console.error('candidates getBBox error', error);
+                              }
                             });
                           } else {
                             // Como último recurso, tomar el primero
@@ -1049,11 +1082,13 @@ export default function MapaColombia() {
                         const dy = ay - by;
                         const d = Math.sqrt(dx * dx + dy * dy);
                         if (d < bestD) { bestD = d; bestEl = sh; }
-                      } catch {}
+                      } catch (error) {
+                        console.error('shapesAll getBBox error', error);
+                      }
                     });
                   }
                   if (bestEl) {
-                    let maxDim = 0; try { const bb = (bestEl as SVGGraphicsElement).getBBox(); maxDim = Math.max(bb.width, bb.height); } catch {}
+                    let maxDim = 0; try { const bb = (bestEl as SVGGraphicsElement).getBBox(); maxDim = Math.max(bb.width, bb.height); } catch (error) { console.error('bestEl getBBox error (object)', error); }
                     const depHardLimit = new Set(['magdalena','atlantico','bolivar','cordoba','sucre']);
                     const depExtraRelax = new Set(['atlantico','sucre']);
                     const base = Math.min(40, maxDim * 0.5);
@@ -1109,7 +1144,9 @@ export default function MapaColombia() {
                           const bb = el.getBBox();
                           const area = bb.width * bb.height;
                           if (area < minArea) { minArea = area; chosen = el; }
-                        } catch {}
+                        } catch (error) {
+                          console.error('bogotaPaths getBBox error', error);
+                        }
                       });
                       if (chosen) targetShapes = [chosen];
                     }
@@ -1136,9 +1173,13 @@ export default function MapaColombia() {
                           const prefer = dd && normalize(dd) === normalize(dep.id);
                           const score = prefer ? d * 0.5 : d;
                           if (score < bestGD) { bestGD = score; chosen = s; }
-                        } catch {}
+                        } catch (error) {
+                          console.error('childShapes getBBox error', error);
+                        }
                       });
-                    } catch {}
+                    } catch (error) {
+                      console.error('parentGroup selection/centering error', error);
+                    }
                     (chosen ? [chosen] : targetShapes).forEach((sh) => sh.classList.add('dept-selected'));
                   }
                 }
@@ -1146,7 +1187,9 @@ export default function MapaColombia() {
               });
                 });
             }
-          } catch {}
+          } catch (error) {
+            console.error('SVG processing error', error);
+          }
           setSvgDisponible(true);
           setSvgLoaded(true);
         };
@@ -1182,13 +1225,17 @@ export default function MapaColombia() {
       try {
         (el.style as any).transformOrigin = 'center center';
         (el.style as any).transform = `scale(${zoom})`;
-      } catch {}
+      } catch (error) {
+        console.error('apply zoom transform (inline) error', error);
+      }
     }
     if (obj) {
       try {
         (obj.style as any).transformOrigin = 'center center';
         (obj.style as any).transform = `scale(${zoom})`;
-      } catch {}
+      } catch (error) {
+        console.error('apply zoom transform (<object>) error', error);
+      }
     }
   }, [zoom]);
 
