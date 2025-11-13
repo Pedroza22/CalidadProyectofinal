@@ -3,6 +3,7 @@ import { departamentos, actividadesPorRegion, type Departamento } from "../data/
 import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
+import { Trophy, Star } from "lucide-react";
 
 // Vista fusionada: Mapa SVG interactivo + panel de información
 // Al hacer clic en un departamento (en el SVG), se muestra su información.
@@ -12,11 +13,15 @@ export default function MapaColombia() {
   const [seleccion, setSeleccion] = useState<Departamento | null>(null);
   const [svgDisponible, setSvgDisponible] = useState<boolean>(true);
   const svgContainerRef = useRef<HTMLDivElement | null>(null);
+  const zoomWrapperRef = useRef<HTMLDivElement | null>(null);
   const [svgLoaded, setSvgLoaded] = useState<boolean>(false);
   // Zoom y referencias a elementos SVG
   const [zoom, setZoom] = useState<number>(1);
   const inlineSvgElRef = useRef<SVGElement | null>(null);
   const objectElRef = useRef<HTMLObjectElement | null>(null);
+  // Gamificación: puntos y departamentos visitados
+  const [puntos, setPuntos] = useState<number>(0);
+  const [visitados, setVisitados] = useState<string[]>([]);
   // TTS: reproducir información del departamento seleccionado
   const speakDepartamento = (dep: Departamento) => {
     try {
@@ -51,6 +56,17 @@ export default function MapaColombia() {
     if (seleccion) localStorage.setItem("mapaColombia:seleccion", JSON.stringify(seleccion));
   }, [seleccion]);
 
+  // Al seleccionar un departamento nuevo, sumar puntos y marcar como visitado
+  useEffect(() => {
+    if (!seleccion) return;
+    setVisitados((prev) => {
+      if (prev.includes(seleccion.id)) return prev;
+      const next = [...prev, seleccion.id];
+      setPuntos((p) => p + 10);
+      return next;
+    });
+  }, [seleccion]);
+
   const regiones = useMemo(() => ["Todas", "Caribe", "Pacífica", "Andina", "Orinoquía", "Amazonía", "Insular"], []);
 
   const listaFiltrada = useMemo(() => {
@@ -62,6 +78,101 @@ export default function MapaColombia() {
   }, [busqueda, regionFiltro]);
 
   const actividades = seleccion ? actividadesPorRegion[seleccion.region] : [];
+  // Curiosidades por región (breves y amigables para niños)
+  const curiosidadesPorRegion: Record<Departamento["region"], string[]> = {
+    Caribe: [
+      "Aquí nació el vallenato 🎶",
+      "Playas cálidas y brisa fuerte 🏖️",
+      "Carnaval de Barranquilla muy famoso 🎭",
+    ],
+    Pacífica: [
+      "Selvas húmedas y mucha lluvia 🌧️",
+      "Ballenas visitan en temporada 🐋",
+      "Tamboras y marimba suenan aquí 🥁",
+    ],
+    Andina: [
+      "Cordilleras y montañas altas ⛰️",
+      "Climas fríos y templados 🧥",
+      "Muchas ciudades grandes 🏙️",
+    ],
+    Orinoquía: [
+      "Llanos extensos y atardeceres hermosos 🌅",
+      "Tradición ganadera y caballos 🐎",
+      "Joropo: música y baile típico 🎵",
+    ],
+    Amazonía: [
+      "Bosque tropical más grande 🌳",
+      "Gran diversidad de animales 🦜",
+      "Ríos caudalosos y comunidades indígenas 🛶",
+    ],
+    Insular: [
+      "Islas con mar turquesa 🏝️",
+      "Arrecifes y corales coloridos 🪸",
+      "Idioma creole junto al español 🗣️",
+    ],
+  };
+
+  // Estado y funciones para un modo Quiz sencillo
+  type Pregunta = {
+    tipo: "capital" | "region";
+    departamento: Departamento;
+    opciones: string[];
+    respuestaCorrecta: string;
+  };
+  const [quizActivo, setQuizActivo] = useState(false);
+  const [preguntas, setPreguntas] = useState<Pregunta[]>([]);
+  const [indicePregunta, setIndicePregunta] = useState(0);
+  const [puntaje, setPuntaje] = useState(0);
+  const [respuestaSeleccionada, setRespuestaSeleccionada] = useState<string | null>(null);
+  const [quizFinalizado, setQuizFinalizado] = useState(false);
+
+  function generarPreguntas(cantidad = 6) {
+    const mezcla = [...departamentos].sort(() => Math.random() - 0.5).slice(0, cantidad);
+    const preguntasGeneradas: Pregunta[] = mezcla.map((dep, idx) => {
+      const tipo: Pregunta["tipo"] = idx % 2 === 0 ? "capital" : "region";
+      if (tipo === "capital") {
+        const distractores = [...departamentos]
+          .filter((d) => d.id !== dep.id)
+          .sort(() => Math.random() - 0.5)
+          .slice(0, 3)
+          .map((d) => d.capital);
+        const opciones = [...distractores, dep.capital].sort(() => Math.random() - 0.5);
+        return { tipo, departamento: dep, opciones, respuestaCorrecta: dep.capital };
+      } else {
+        const regionesPosibles: Departamento["region"][] = [
+          "Caribe",
+          "Pacífica",
+          "Andina",
+          "Orinoquía",
+          "Amazonía",
+          "Insular",
+        ];
+        const distractores = regionesPosibles.filter((r) => r !== dep.region).sort(() => Math.random() - 0.5).slice(0, 3);
+        const opciones = [...distractores, dep.region].sort(() => Math.random() - 0.5);
+        return { tipo, departamento: dep, opciones, respuestaCorrecta: dep.region };
+      }
+    });
+    setPreguntas(preguntasGeneradas);
+    setIndicePregunta(0);
+    setPuntaje(0);
+    setRespuestaSeleccionada(null);
+    setQuizFinalizado(false);
+  }
+  function iniciarQuiz() { generarPreguntas(6); setQuizActivo(true); }
+  function responder(opcion: string) {
+    if (quizFinalizado) return;
+    setRespuestaSeleccionada(opcion);
+    const actual = preguntas[indicePregunta];
+    if (opcion === actual.respuestaCorrecta) setPuntaje((p) => p + 1);
+  }
+  function siguientePregunta() {
+    if (indicePregunta + 1 < preguntas.length) {
+      setIndicePregunta((i) => i + 1);
+      setRespuestaSeleccionada(null);
+    } else {
+      setQuizFinalizado(true);
+    }
+  }
 
   // Búsqueda: si el texto coincide con un departamento, mostrar su información
   useEffect(() => {
@@ -86,10 +197,11 @@ export default function MapaColombia() {
         if (!res.ok) throw new Error("SVG not found");
         const text = await res.text();
         const container = svgContainerRef.current;
-        if (!container) return;
-        container.innerHTML = text;
+        const wrapper = zoomWrapperRef.current;
+        if (!container || !wrapper) return;
+        wrapper.innerHTML = text;
         // Forzar que el SVG ocupe el ancho disponible
-        const insertedSvg = container.querySelector('svg') as SVGElement | null;
+        const insertedSvg = wrapper.querySelector('svg') as SVGElement | null;
         if (insertedSvg) {
           insertedSvg.setAttribute('width', '100%');
           insertedSvg.style.maxWidth = '900px';
@@ -229,8 +341,11 @@ export default function MapaColombia() {
             setSvgDisponible(true);
             setSvgLoaded(true);
           };
-          container.innerHTML = '';
-          container.appendChild(obj);
+          const wrapper = zoomWrapperRef.current;
+          if (wrapper) {
+            wrapper.innerHTML = '';
+            wrapper.appendChild(obj);
+          }
           // Evitar seguir con wiring del SVG inline si usamos <object>
           return;
         }
@@ -1196,8 +1311,11 @@ export default function MapaColombia() {
           setSvgDisponible(true);
           setSvgLoaded(true);
         };
-        container.innerHTML = "";
-        container.appendChild(obj);
+        const wrapper2 = zoomWrapperRef.current;
+        if (wrapper2) {
+          wrapper2.innerHTML = "";
+          wrapper2.appendChild(obj);
+        }
       }
     };
     fetchSvg();
@@ -1224,18 +1342,35 @@ export default function MapaColombia() {
   useEffect(() => {
     const el = inlineSvgElRef.current;
     const obj = objectElRef.current;
+    const container = svgContainerRef.current;
+    // Preferimos transformar el contenedor para asegurar que funcione
+    if (container) {
+      try {
+        (container.style as any).transformOrigin = '50% 50%';
+        (container.style as any).transform = `scale(${zoom})`;
+        (container.style as any).transition = 'transform 200ms ease-in-out';
+        (container.style as any).willChange = 'transform';
+      } catch (error) {
+        console.error('apply zoom transform (container) error', error);
+      }
+    }
+    // Además aplicamos al SVG o al <object> por compatibilidad
     if (el) {
       try {
-        (el.style as any).transformOrigin = 'center center';
+        (el.style as any).transformOrigin = '50% 50%';
         (el.style as any).transform = `scale(${zoom})`;
+        (el.style as any).transition = 'transform 200ms ease-in-out';
+        (el.style as any).transformBox = 'fill-box';
       } catch (error) {
         console.error('apply zoom transform (inline) error', error);
       }
     }
     if (obj) {
       try {
-        (obj.style as any).transformOrigin = 'center center';
+        (obj.style as any).transformOrigin = '50% 50%';
         (obj.style as any).transform = `scale(${zoom})`;
+        (obj.style as any).transition = 'transform 200ms ease-in-out';
+        (obj.style as any).display = 'block';
       } catch (error) {
         console.error('apply zoom transform (<object>) error', error);
       }
@@ -1243,13 +1378,33 @@ export default function MapaColombia() {
   }, [zoom]);
 
   return (
-    <div className="space-y-6">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-b from-[#1a0b2e] via-[#2d1b4e] to-[#4a2c6d] space-y-6 p-4 text-white">
       <header className="space-y-3">
         <div>
           <h1 className="text-4xl md:text-5xl font-black">
             <span className="bg-gradient-to-r from-yellow-400 via-blue-500 to-red-500 bg-clip-text text-transparent">Explora Colombia</span>
           </h1>
-          <p className="text-slate-700 dark:text-slate-300">Haz clic en un departamento y descubre datos curiosos.</p>
+          <p className="text-white/80">Haz clic en un departamento y descubre datos curiosos.</p>
+          <div className="flex flex-wrap gap-3 mt-3">
+            <Card className="bg-gradient-to-br from-yellow-400/80 to-orange-400/80 border-2 border-yellow-600/50 shadow backdrop-blur-sm">
+              <CardContent className="p-3 flex items-center gap-2">
+                <Trophy className="w-5 h-5 text-white" />
+                <div className="text-left">
+                  <div className="text-xs font-bold text-white">Puntos</div>
+                  <div className="text-xl font-black text-white">{puntos}</div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="bg-gradient-to-br from-green-400/80 to-emerald-400/80 border-2 border-green-600/50 shadow backdrop-blur-sm">
+              <CardContent className="p-3 flex items-center gap-2">
+                <Star className="w-5 h-5 text-white" />
+                <div className="text-left">
+                  <div className="text-xs font-bold text-white">Explorados</div>
+                  <div className="text-xl font-black text-white">{visitados.length}/{departamentos.length}</div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
         <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
           <div className="flex gap-2">
@@ -1258,12 +1413,12 @@ export default function MapaColombia() {
               placeholder="Buscar departamento…"
               value={busqueda}
               onChange={(e) => setBusqueda(e.target.value)}
-              className="border rounded-full px-4 py-2 bg-white dark:bg-slate-900 border-amber-300 dark:border-amber-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+              className="rounded-full px-4 py-2 bg-white/10 text-white placeholder:text-white/70 border border-white/20 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
             />
             <select
               value={regionFiltro}
               onChange={(e) => setRegionFiltro(e.target.value)}
-              className="border rounded-full px-4 py-2 bg-white dark:bg-slate-900 border-amber-300 dark:border-amber-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+              className="rounded-full px-4 py-2 bg-white/10 text-white border border-white/20 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
             >
               {regiones.map((r) => (
                 <option key={r} value={r}>{r}</option>
@@ -1272,50 +1427,112 @@ export default function MapaColombia() {
           </div>
           {seleccion && (
             <div className="flex flex-wrap gap-2">
-              <Badge className="border-amber-400 bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">Región: {seleccion.region}</Badge>
-              <Badge className="border-sky-400 bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300">Capital: {seleccion.capital}</Badge>
+              <Badge className="bg-white/10 text-white border border-white/20">Región: {seleccion.region}</Badge>
+              <Badge className="bg-white/10 text-white border border-white/20">Capital: {seleccion.capital}</Badge>
               {typeof seleccion.poblacionAprox === 'number' && (
-                <Badge className="border-emerald-400 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">Población: {seleccion.poblacionAprox.toLocaleString('es-CO')}</Badge>
+                <Badge className="bg-white/10 text-white border border-white/20">Población: {seleccion.poblacionAprox.toLocaleString('es-CO')}</Badge>
               )}
             </div>
           )}
         </div>
       </header>
 
-      <section className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-white/90 dark:bg-slate-900/70 p-4 shadow">
+      <section className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-white/80 dark:bg-slate-900/60 backdrop-blur p-4 shadow relative z-0">
         {svgDisponible ? (
           <div className="w-full overflow-auto">
               <style>
               {`
-              .dept-hover { filter: brightness(1.06) drop-shadow(0 1px 0 rgba(0,0,0,0.2)); transition: filter 0.2s ease; }
-              .dept-selected { stroke: #10b981 !important; stroke-width: 4 !important; vector-effect: non-scaling-stroke; filter: drop-shadow(0 2px 0 rgba(0,0,0,0.4)) drop-shadow(0 10px 10px rgba(0,0,0,0.28)); transform: translateY(-1px) scale(1.012); transition: filter 0.2s ease, transform 0.2s ease; }
+              .dept-hover { filter: brightness(1.12) saturate(1.05) drop-shadow(0 1px 0 rgba(0,0,0,0.2)); transform: translateY(-1px); transition: transform 150ms ease, filter 150ms ease; }
+              .dept-selected { stroke: #10b981 !important; stroke-width: 4 !important; vector-effect: non-scaling-stroke; filter: drop-shadow(0 2px 0 rgba(0,0,0,0.4)) drop-shadow(0 10px 10px rgba(0,0,0,0.28)); transform: translateY(-1px) scale(1.012); transition: filter 150ms ease, transform 150ms ease; }
               .label-selected { fill: #10b981; font-weight: 700; }
+              /* Hover directo para formas y textos del SVG */
+              path:hover, polygon:hover, polyline:hover { filter: brightness(1.12) saturate(1.05); transform: translateY(-1px); transition: transform 150ms ease, filter 150ms ease; }
+              text:hover { fill: #16a34a; font-weight: 700; }
             `}
               </style>
-            <div className="flex items-center gap-2 mb-2">
-              <Button className="rounded-full px-3 py-2 bg-amber-400 text-slate-900 hover:bg-amber-500 border border-amber-500/50 shadow-sm" onClick={() => setZoom((z)=>Math.min(3, parseFloat((z*1.15).toFixed(2))))}>+
+            <div className="absolute left-4 top-4 z-20 flex items-center gap-2 mb-2 pointer-events-none">
+              <Button
+                className="pointer-events-auto rounded-full px-3 py-2 bg-white/10 text-white hover:bg-white/20 border border-white/20 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                onClick={() => setZoom((z)=>Math.min(3, parseFloat((z + 0.15).toFixed(2))))}
+              >+
               </Button>
-              <Button className="rounded-full px-3 py-2 bg-sky-400 text-slate-900 hover:bg-sky-500 border border-sky-500/50 shadow-sm" onClick={() => setZoom((z)=>Math.max(0.5, parseFloat((z*0.85).toFixed(2))))}>-
+              <Button
+                className="pointer-events-auto rounded-full px-3 py-2 bg-white/10 text-white hover:bg-white/20 border border-white/20 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                onClick={() => setZoom((z)=>Math.max(0.5, parseFloat((z - 0.15).toFixed(2))))}
+              >-
               </Button>
-              <Button className="rounded-full px-3 py-2 bg-emerald-400 text-slate-900 hover:bg-emerald-500 border border-emerald-500/50 shadow-sm" onClick={() => setZoom(1)}>Reset</Button>
-              <span className="text-xs text-slate-600 dark:text-slate-300">Zoom: {Math.round(zoom*100)}%</span>
+              <Button
+                className="pointer-events-auto rounded-full px-3 py-2 bg-white/10 text-white hover:bg-white/20 border border-white/20 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                onClick={() => setZoom(1)}
+              >Reset</Button>
+              <span className="text-xs text-white/80 pointer-events-none">Zoom: {Math.round(zoom*100)}%</span>
             </div>
-            <div ref={svgContainerRef} className="mx-auto" style={{ maxWidth: 900, minHeight: 400 }} />
+            <div ref={svgContainerRef} className="mx-auto relative z-0" style={{ maxWidth: 900, minHeight: 400 }}>
+              <div ref={zoomWrapperRef} className="inline-block" />
+            </div>
             {!svgLoaded && (
-              <div className="text-sm text-slate-600 dark:text-slate-300 mt-2">Cargando mapa…</div>
+              <div className="text-sm text-white/80 mt-2">Cargando mapa…</div>
             )}
           </div>
         ) : (
-          <div className="text-sm text-slate-600 dark:text-slate-300">
+          <div className="text-sm text-white/80">
             No se encontró `public/colombia.svg`. Usa la lista de abajo o agrega un SVG con atributos `data-dept`.
+          </div>
+      )}
+      </section>
+      {/* Quiz sencillo: capitales y regiones */}
+      <section className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-white/80 dark:bg-slate-900/60 backdrop-blur p-4 shadow mt-4 relative z-10">
+        <h2 className="text-xl font-bold mb-2 text-white">Juego rápido: Capitales y Regiones</h2>
+        {!quizActivo ? (
+          <div className="flex items-center gap-2">
+            <p className="text-white/80">Pon a prueba lo aprendido con preguntas cortas.</p>
+            <Button className="rounded-full px-3 py-2 bg-slate-800 text-white hover:bg-slate-700 border border-slate-700 shadow-sm" onClick={iniciarQuiz}>Iniciar Quiz</Button>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {!quizFinalizado ? (
+              <div>
+                <div className="mb-2 text-sm text-white/70">Pregunta {indicePregunta + 1} de {preguntas.length}</div>
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="font-semibold mb-2">
+                      {preguntas[indicePregunta].tipo === "capital"
+                        ? `¿Cuál es la capital de ${preguntas[indicePregunta].departamento.nombre}?`
+                        : `¿A qué región pertenece ${preguntas[indicePregunta].departamento.nombre}?`}
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {preguntas[indicePregunta].opciones.map((op) => (
+                        <Button
+                          key={op}
+                          className={`rounded-lg px-3 py-2 border ${respuestaSeleccionada === op ?
+                            (op === preguntas[indicePregunta].respuestaCorrecta ? "bg-emerald-100 border-emerald-500 text-emerald-800" : "bg-rose-100 border-rose-500 text-rose-800") :
+                            "bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"}`}
+                          onClick={() => responder(op)}
+                          disabled={!!respuestaSeleccionada}
+                        >{op}</Button>
+                      ))}
+                    </div>
+                    <div className="mt-3">
+                      <Button className="rounded-full px-3 py-2 bg-slate-800 text-white hover:bg-slate-700 border border-slate-700 shadow-sm" onClick={siguientePregunta} disabled={!respuestaSeleccionada}>Siguiente</Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <div className="text-white/80">¡Terminaste! Puntaje: {puntaje} / {preguntas.length}</div>
+                <Button className="rounded-full px-3 py-2 bg-slate-800 text-white hover:bg-slate-700 border border-slate-700 shadow-sm" onClick={() => { setQuizActivo(false); }}>Cerrar</Button>
+                <Button className="rounded-full px-3 py-2 bg-slate-800 text-white hover:bg-slate-700 border border-slate-700 shadow-sm" onClick={() => { generarPreguntas(6); setQuizFinalizado(false); setRespuestaSeleccionada(null); setIndicePregunta(0); setPuntaje(0); }}>Reiniciar</Button>
+              </div>
+            )}
           </div>
         )}
       </section>
 
       {/* Lista alternativa interactiva (si no hay SVG) */}
       {!svgDisponible && (
-        <section className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-white/90 dark:bg-slate-900/70 p-4 shadow">
-          <h2 className="text-lg font-semibold mb-2">Departamentos</h2>
+        <section className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-white/80 dark:bg-slate-900/60 backdrop-blur p-4 shadow">
+          <h2 className="text-lg font-semibold mb-2 text-white">Departamentos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {listaFiltrada.map((d) => (
               <button
@@ -1327,37 +1544,52 @@ export default function MapaColombia() {
                     : "border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"
                 }`}
               >
-                <div className="font-medium">{d.nombre}</div>
-                <div className="text-xs text-slate-500 dark:text-slate-400">Capital: {d.capital} • Región: {d.region}</div>
+                <div className="font-medium text-white">{d.nombre}</div>
+                <div className="text-xs text-white/70">Capital: {d.capital} • Región: {d.region}</div>
               </button>
             ))}
           </div>
         </section>
       )}
 
-      <section className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-white/90 dark:bg-slate-900/70 p-4 shadow">
-        <h2 className="text-xl font-bold mb-2 text-slate-800 dark:text-slate-100">Detalles del departamento</h2>
+      <section className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-white/80 dark:bg-slate-900/60 backdrop-blur p-4 shadow relative z-10">
+        <h2 className="text-xl font-bold mb-2 text-white">Detalles del departamento</h2>
         {seleccion ? (
           <div className="space-y-2">
             <div className="flex flex-wrap gap-2 mb-1">
-              <Badge className="border-amber-400 bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">{seleccion.nombre}</Badge>
-              <Badge className="border-sky-400 bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300">Capital: {seleccion.capital}</Badge>
-              <Badge className="border-emerald-400 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">Región: {seleccion.region}</Badge>
+            <Badge className="bg-white/10 text-white border border-white/20">{seleccion.nombre}</Badge>
+            <Badge className="bg-white/10 text-white border border-white/20">Capital: {seleccion.capital}</Badge>
+            <Badge className="bg-white/10 text-white border border-white/20">Región: {seleccion.region}</Badge>
+              <Button
+                className="rounded-full px-3 py-1 bg-emerald-500 text-white hover:bg-emerald-600 border border-emerald-600/50 shadow-sm"
+                onClick={() => speakDepartamento(seleccion)}
+                title="Leer en voz alta"
+              >
+                Escuchar 🔊
+              </Button>
             </div>
             {typeof seleccion.poblacionAprox === "number" && (
-              <div className="text-slate-700 dark:text-slate-200"><span className="font-medium">Población aprox.:</span> {seleccion.poblacionAprox.toLocaleString("es-CO")}</div>
+            <div className="text-white/80"><span className="font-medium">Población aprox.:</span> {seleccion.poblacionAprox.toLocaleString("es-CO")}</div>
             )}
             <div className="mt-3">
-              <h3 className="font-semibold">Actividades sugeridas</h3>
-              <ul className="list-disc pl-5 text-slate-700 dark:text-slate-200">
+              <h3 className="font-semibold text-white">Actividades sugeridas</h3>
+            <ul className="list-disc pl-5 text-white/80">
                 {actividades.map((a, i) => (
                   <li key={i}>{a}</li>
                 ))}
               </ul>
             </div>
+            <div className="mt-3">
+              <h3 className="font-semibold text-white">Datos curiosos</h3>
+            <ul className="list-disc pl-5 text-white/80">
+                {curiosidadesPorRegion[seleccion.region].map((c, i) => (
+                  <li key={i}>{c}</li>
+                ))}
+              </ul>
+            </div>
           </div>
         ) : (
-          <div className="text-slate-600 dark:text-slate-300">Haz clic en el mapa o en la lista para ver detalles.</div>
+          <div className="text-white/70">Haz clic en el mapa o en la lista para ver detalles.</div>
         )}
       </section>
     </div>
