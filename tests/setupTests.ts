@@ -52,3 +52,6 @@ Object.defineProperty(document, "documentElement", {
 Object.defineProperty(document, "dispatchEvent", {
   value: jest.fn(),
 });
+jest.mock("three/examples/jsm/controls/OrbitControls.js", () => ({
+  OrbitControls: function () { return { update: jest.fn(), dispose: jest.fn() } },
+}))
