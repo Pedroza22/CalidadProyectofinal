@@ -53,7 +53,7 @@ export default [
 
   // Overrides para archivos de test y setup: habilitar globals de Jest
   {
-    files: ["**/*.test.ts", "**/*.test.tsx", "src/setupTests.ts"],
+    files: ["**/*.test.ts", "**/*.test.tsx", "tests/setupTests.ts"],
     languageOptions: {
       globals: {
         describe: "readonly",

@@ -5,7 +5,7 @@ export default {
   moduleNameMapper: {
     "^.+\\.(css|scss|sass|less)$": "identity-obj-proxy",
   },
-  setupFilesAfterEnv: ["<rootDir>/src/setupTests.ts"],
+  setupFilesAfterEnv: ["<rootDir>/tests/setupTests.ts"],
   transform: {
     "^.+\\.(ts|tsx)$": ["ts-jest", { useESM: true }],
   },
