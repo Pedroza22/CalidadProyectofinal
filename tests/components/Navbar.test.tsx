@@ -1,13 +1,10 @@
-// src/components/Navbar.test.tsx
-import { render, screen} from "@testing-library/react";
-import Navbar from "./Navbar";
+import { render, screen } from "@testing-library/react";
+import Navbar from "../../src/components/Navbar";
 
-// Limpia los mocks antes de cada prueba
 beforeEach(() => {
   jest.clearAllMocks();
 });
 
-// --- Pruebas de renderizado ---
 describe("Navbar - Renderizado", () => {
   test("renderiza el título principal 'UCC : Prácticas Desarrollo'", () => {
     render(<Navbar />);
@@ -19,4 +16,3 @@ describe("Navbar - Renderizado", () => {
     expect(screen.getByRole("button", { name: /Tema/i })).toBeInTheDocument();
   });
 });
-

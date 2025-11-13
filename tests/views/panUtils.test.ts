@@ -1,4 +1,4 @@
-import { DRAG_THRESHOLD, panFactor, transitionForDragging } from './panUtils';
+import { DRAG_THRESHOLD, panFactor, transitionForDragging } from '../../src/views/panUtils';
 
 describe('panUtils', () => {
   test('DRAG_THRESHOLD es 1', () => {

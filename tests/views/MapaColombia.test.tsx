@@ -1,6 +1,6 @@
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
-import MapaColombia from "./MapaColombia";
+import MapaColombia from "../../src/views/MapaColombia";
 
 // Mock básico de fetch para inyectar un SVG mínimo con piezas y etiquetas
 const mockSvg = `
