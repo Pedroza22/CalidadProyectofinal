@@ -91,3 +91,49 @@ describe("MapaColombia - Interacciones básicas", () => {
     });
   });
 });
+
+describe("MapaColombia - nuevas features: atajos y estado base", () => {
+  let originalGetBCR: any;
+  beforeEach(() => {
+    // Mock fetch de SVG
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, text: async () => mockSvg }) as any;
+
+    // Polyfills/Mocks SVG
+    (window.SVGElement.prototype as any).getBBox = () => ({ x: 0, y: 0, width: 40, height: 40 });
+    (window.SVGSVGElement.prototype as any).createSVGPoint = () => ({
+      x: 0,
+      y: 0,
+      matrixTransform: () => ({ x: 0, y: 0 })
+    });
+    (window.SVGSVGElement.prototype as any).getScreenCTM = () => ({ inverse: () => ({ a: 1, d: 1 }) });
+
+    originalGetBCR = Element.prototype.getBoundingClientRect;
+    (Element.prototype as any).getBoundingClientRect = jest.fn(() => ({
+      width: 100,
+      height: 100,
+      top: 0,
+      left: 0,
+      right: 100,
+      bottom: 100,
+      x: 0,
+      y: 0,
+      toJSON: () => "",
+    }));
+    Object.defineProperty(window.SVGElement.prototype, "clientWidth", { get: () => 100, configurable: true });
+    Object.defineProperty(window.SVGElement.prototype, "clientHeight", { get: () => 100, configurable: true });
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+    (Element.prototype as any).getBoundingClientRect = originalGetBCR;
+  });
+
+  // Helpers eliminados: las pruebas de arrastre se cubren unitariamente en panUtils.test.ts
+
+  test("Muestra instrucción de atajos: Reset con R o doble clic", async () => {
+    render(<MapaColombia />);
+    expect(await screen.findByText(/Reset: R o doble clic/i)).toBeInTheDocument();
+  });
+
+  // Nota: las pruebas de arrastre y sensibilidad se cubren unitariamente en panUtils.test.ts
+});

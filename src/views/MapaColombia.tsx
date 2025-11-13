@@ -4,6 +4,7 @@ import { Card, CardContent } from "../components/ui/card";
 import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Trophy, Star } from "lucide-react";
+import { DRAG_THRESHOLD, panFactor } from "./panUtils";
 
 // Vista fusionada: Mapa SVG interactivo + panel de información
 // Al hacer clic en un departamento (en el SVG), se muestra su información.
@@ -1406,7 +1407,7 @@ export default function MapaColombia() {
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
       // Umbral para considerar que es arrastre (evitar interferir con clics leves)
-      const threshold = 1;
+      const threshold = DRAG_THRESHOLD;
       if (!isDragging && (Math.abs(dx) > threshold || Math.abs(dy) > threshold)) {
         isDragging = true;
         isDraggingRef.current = true;
@@ -1415,7 +1416,7 @@ export default function MapaColombia() {
       // Sensibilidad de pan: aún más alta con mayor zoom.
       // Fórmula: factor = base * zoom^2 (base=20).
       // Ejemplos: zoom=1 -> 20x, zoom=2 -> 80x, zoom=3 -> 180x
-      const factor = 20 * (zoom * zoom);
+      const factor = panFactor(zoom);
       setPan({ x: baseX + dx * factor, y: baseY + dy * factor });
     };
     const endDrag = () => {
