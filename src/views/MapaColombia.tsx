@@ -13,24 +13,44 @@ export default function MapaColombia() {
   const [seleccion, setSeleccion] = useState<Departamento | null>(null);
   const [svgDisponible, setSvgDisponible] = useState<boolean>(true);
   const svgContainerRef = useRef<HTMLDivElement | null>(null);
+  const panelRef = useRef<HTMLDivElement | null>(null);
   const zoomWrapperRef = useRef<HTMLDivElement | null>(null);
   const [svgLoaded, setSvgLoaded] = useState<boolean>(false);
   // Zoom y referencias a elementos SVG
   const [zoom, setZoom] = useState<number>(1);
+  const [pan, setPan] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  // Bandera global para saber si estamos arrastrando (evita transiciones)
+  const isDraggingRef = useRef(false);
+  // Restablecer vista (mejorado)
+  const resetView = () => {
+    try {
+      const synth = (window as any).speechSynthesis as SpeechSynthesis | undefined;
+      synth?.cancel();
+    } catch {}
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+    const wrapper = zoomWrapperRef.current;
+    if (wrapper) {
+      (wrapper.style as any).transition = 'transform 200ms ease-in-out';
+    }
+  };
   const inlineSvgElRef = useRef<SVGElement | null>(null);
   const objectElRef = useRef<HTMLObjectElement | null>(null);
   // Gamificación: puntos y departamentos visitados
   const [puntos, setPuntos] = useState<number>(0);
   const [visitados, setVisitados] = useState<string[]>([]);
-  // TTS: reproducir información del departamento seleccionado
+  // TTS: reproducir información del departamento seleccionado (incluye datos curiosos)
   const speakDepartamento = (dep: Departamento) => {
     try {
       const synth = (window as any).speechSynthesis as SpeechSynthesis | undefined;
       if (!synth) return;
       const acts = actividadesPorRegion[dep.region] || [];
+      const curios = curiosidadesPorRegion[dep.region] || [];
+      const curiosBreves = curios.slice(0, 3).join('; ');
       const texto = `${dep.nombre}. Capital: ${dep.capital}. Región: ${dep.region}. ` +
         (typeof dep.poblacionAprox === 'number' ? `Población aproximada: ${dep.poblacionAprox.toLocaleString('es-CO')}. ` : '') +
-        (acts.length ? `Actividades sugeridas: ${acts.join('; ')}.` : '');
+        (acts.length ? `Actividades sugeridas: ${acts.join('; ')}. ` : '') +
+        (curios.length ? `Datos curiosos: ${curiosBreves}.` : '');
       const u = new SpeechSynthesisUtterance(texto);
       u.lang = 'es-CO'; u.rate = 1; u.pitch = 1; u.volume = 1;
       synth.cancel();
@@ -204,9 +224,10 @@ export default function MapaColombia() {
         const insertedSvg = wrapper.querySelector('svg') as SVGElement | null;
         if (insertedSvg) {
           insertedSvg.setAttribute('width', '100%');
-          insertedSvg.style.maxWidth = '900px';
+          insertedSvg.setAttribute('height', '100%');
           insertedSvg.style.display = 'block';
-          insertedSvg.style.margin = '0 auto';
+          insertedSvg.style.margin = '0';
+          insertedSvg.style.maxWidth = 'none';
           inlineSvgElRef.current = insertedSvg;
           // Inyectar estilos para las clases de resaltado en modo inline
           const style = document.createElement('style');
@@ -222,7 +243,9 @@ export default function MapaColombia() {
           obj.type = 'image/svg+xml';
           obj.data = '/Colombia.svg';
           obj.style.width = '100%';
-          obj.style.maxWidth = '900px';
+          obj.style.height = '100%';
+          obj.style.maxWidth = 'none';
+          obj.style.display = 'block';
           objectElRef.current = obj;
           obj.onerror = () => {
             // Si falla la carga del objeto, marcamos como no disponible
@@ -1338,12 +1361,127 @@ export default function MapaColombia() {
     return () => container.removeEventListener('wheel', onWheel as any);
   }, []);
 
-  // Aplicar transform en el SVG inline o en el <object>
+  // Modo pan: arrastrar con botón medio/derecho, o manteniendo Space (sin romper clics)
+  const [isSpaceDown, setIsSpaceDown] = useState(false);
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => { if (e.code === 'Space') setIsSpaceDown(true); };
+    const onKeyUp = (e: KeyboardEvent) => { if (e.code === 'Space') setIsSpaceDown(false); };
+    window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+    };
+  }, []);
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    const container = svgContainerRef.current;
+    const obj = objectElRef.current;
+    const wrapper = zoomWrapperRef.current;
+    if (!panel || !wrapper) return;
+    let isDown = false;
+    let isDragging = false;
+    let startX = 0;
+    let startY = 0;
+    let baseX = 0;
+    let baseY = 0;
+    const startDrag = (e: PointerEvent) => {
+      // Permitir pan con botón izquierdo en cualquier zoom (umbral protege clics),
+      // además de botón medio/derecho o Space+izquierdo
+      const allow = (e.button === 0 || e.button === 1 || e.button === 2 || (isSpaceDown && e.button === 0));
+      if (!allow) return;
+      // No prevenir por defecto aún; sólo si se supera el umbral de movimiento
+      isDown = true;
+      isDragging = false;
+      isDraggingRef.current = false;
+      baseX = pan.x; baseY = pan.y;
+      startX = e.clientX; startY = e.clientY;
+      // Mantener una transición corta durante el arrastre para continuidad visual
+      (wrapper.style as any).transition = 'transform 80ms linear';
+      (wrapper.style as any).cursor = 'grabbing';
+    };
+    const moveDrag = (e: PointerEvent) => {
+      if (!isDown) return;
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      // Umbral para considerar que es arrastre (evitar interferir con clics leves)
+      const threshold = 1;
+      if (!isDragging && (Math.abs(dx) > threshold || Math.abs(dy) > threshold)) {
+        isDragging = true;
+        isDraggingRef.current = true;
+        e.preventDefault();
+      }
+      // Sensibilidad de pan: aún más alta con mayor zoom.
+      // Fórmula: factor = base * zoom^2 (base=20).
+      // Ejemplos: zoom=1 -> 20x, zoom=2 -> 80x, zoom=3 -> 180x
+      const factor = 20 * (zoom * zoom);
+      setPan({ x: baseX + dx * factor, y: baseY + dy * factor });
+    };
+    const endDrag = () => {
+      if (!isDown) return;
+      isDown = false;
+      isDraggingRef.current = false;
+      (wrapper.style as any).transition = 'transform 200ms ease-in-out';
+      (wrapper.style as any).cursor = 'grab';
+    };
+    // Listeners en el panel (área completa) y también en el contenedor/<object>
+    panel.addEventListener('pointerdown', startDrag);
+    panel.addEventListener('pointermove', moveDrag);
+    if (container) {
+      container.addEventListener('pointerdown', startDrag);
+      container.addEventListener('pointermove', moveDrag);
+    }
+    window.addEventListener('pointerup', endDrag);
+    if (obj) {
+      obj.addEventListener('pointerdown', startDrag);
+      obj.addEventListener('pointermove', moveDrag);
+    }
+    (wrapper.style as any).cursor = 'grab';
+    (panel.style as any).cursor = 'grab';
+    const preventMenu = (e: MouseEvent) => { if (zoom > 1) e.preventDefault(); };
+    panel.addEventListener('contextmenu', preventMenu);
+    const onDblClick = () => resetView();
+    panel.addEventListener('dblclick', onDblClick);
+    const onKey = (e: KeyboardEvent) => { if (e.code === 'KeyR') resetView(); };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      panel.removeEventListener('pointerdown', startDrag);
+      panel.removeEventListener('pointermove', moveDrag);
+      if (container) {
+        container.removeEventListener('pointerdown', startDrag);
+        container.removeEventListener('pointermove', moveDrag);
+      }
+      window.removeEventListener('pointerup', endDrag);
+      if (obj) {
+        obj.removeEventListener('pointerdown', startDrag);
+        obj.removeEventListener('pointermove', moveDrag);
+      }
+      panel.removeEventListener('contextmenu', preventMenu);
+      panel.removeEventListener('dblclick', onDblClick);
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [pan.x, pan.y, zoom, isSpaceDown]);
+
+  // Aplicar transform (zoom + pan) en el wrapper; fallback a SVG/<object>
   useEffect(() => {
     const el = inlineSvgElRef.current;
     const obj = objectElRef.current;
     const container = svgContainerRef.current;
-    // Preferimos transformar el contenedor para asegurar que funcione
+    const wrapper = zoomWrapperRef.current;
+    if (wrapper) {
+      try {
+        (wrapper.style as any).transformOrigin = '50% 50%';
+        (wrapper.style as any).transform = `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`;
+        (wrapper.style as any).transition = isDraggingRef.current ? 'transform 80ms linear' : 'transform 200ms ease-in-out';
+        (wrapper.style as any).willChange = 'transform';
+        (wrapper.style as any).display = 'inline-block';
+      } catch (error) {
+        console.error('apply zoom/pan transform (wrapper) error', error);
+      }
+      return;
+    }
+    // Fallback: si no hay wrapper, aplicar a contenedor/SVG/<object>
     if (container) {
       try {
         (container.style as any).transformOrigin = '50% 50%';
@@ -1354,7 +1492,6 @@ export default function MapaColombia() {
         console.error('apply zoom transform (container) error', error);
       }
     }
-    // Además aplicamos al SVG o al <object> por compatibilidad
     if (el) {
       try {
         (el.style as any).transformOrigin = '50% 50%';
@@ -1375,7 +1512,7 @@ export default function MapaColombia() {
         console.error('apply zoom transform (<object>) error', error);
       }
     }
-  }, [zoom]);
+  }, [zoom, pan]);
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-b from-[#1a0b2e] via-[#2d1b4e] to-[#4a2c6d] space-y-6 p-4 text-white">
@@ -1437,9 +1574,9 @@ export default function MapaColombia() {
         </div>
       </header>
 
-      <section className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-white/80 dark:bg-slate-900/60 backdrop-blur p-4 shadow relative z-0">
+      <section className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-slate-900/60 backdrop-blur p-4 shadow relative z-0">
         {svgDisponible ? (
-          <div className="w-full overflow-auto">
+          <div className="w-full overflow-hidden" ref={panelRef} style={{ userSelect: 'none', touchAction: 'none' }}>
               <style>
               {`
               .dept-hover { filter: brightness(1.12) saturate(1.05) drop-shadow(0 1px 0 rgba(0,0,0,0.2)); transform: translateY(-1px); transition: transform 150ms ease, filter 150ms ease; }
@@ -1463,12 +1600,13 @@ export default function MapaColombia() {
               </Button>
               <Button
                 className="pointer-events-auto rounded-full px-3 py-2 bg-white/10 text-white hover:bg-white/20 border border-white/20 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
-                onClick={() => setZoom(1)}
-              >Reset</Button>
+                onClick={resetView}
+                >Reset</Button>
               <span className="text-xs text-white/80 pointer-events-none">Zoom: {Math.round(zoom*100)}%</span>
+              <span className="text-xs text-white/70 pointer-events-none">Arrastra con clic izquierdo • Reset: R o doble clic</span>
             </div>
-            <div ref={svgContainerRef} className="mx-auto relative z-0" style={{ maxWidth: 900, minHeight: 400 }}>
-              <div ref={zoomWrapperRef} className="inline-block" />
+            <div ref={svgContainerRef} className="relative z-0 w-full min-h-[460px]">
+              <div ref={zoomWrapperRef} className="inline-block w-full h-full" />
             </div>
             {!svgLoaded && (
               <div className="text-sm text-white/80 mt-2">Cargando mapa…</div>
@@ -1481,7 +1619,7 @@ export default function MapaColombia() {
       )}
       </section>
       {/* Quiz sencillo: capitales y regiones */}
-      <section className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-white/80 dark:bg-slate-900/60 backdrop-blur p-4 shadow mt-4 relative z-10">
+      <section className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-slate-900/60 backdrop-blur p-4 shadow mt-4 relative z-10">
         <h2 className="text-xl font-bold mb-2 text-white">Juego rápido: Capitales y Regiones</h2>
         {!quizActivo ? (
           <div className="flex items-center gap-2">
@@ -1493,9 +1631,9 @@ export default function MapaColombia() {
             {!quizFinalizado ? (
               <div>
                 <div className="mb-2 text-sm text-white/70">Pregunta {indicePregunta + 1} de {preguntas.length}</div>
-                <Card>
+                <Card className="bg-slate-800/70 border border-slate-700 text-white shadow-sm">
                   <CardContent className="p-4">
-                    <div className="font-semibold mb-2">
+                    <div className="font-semibold mb-2 text-white">
                       {preguntas[indicePregunta].tipo === "capital"
                         ? `¿Cuál es la capital de ${preguntas[indicePregunta].departamento.nombre}?`
                         : `¿A qué región pertenece ${preguntas[indicePregunta].departamento.nombre}?`}
@@ -1504,9 +1642,9 @@ export default function MapaColombia() {
                       {preguntas[indicePregunta].opciones.map((op) => (
                         <Button
                           key={op}
-                          className={`rounded-lg px-3 py-2 border ${respuestaSeleccionada === op ?
-                            (op === preguntas[indicePregunta].respuestaCorrecta ? "bg-emerald-100 border-emerald-500 text-emerald-800" : "bg-rose-100 border-rose-500 text-rose-800") :
-                            "bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800"}`}
+                          className={`rounded-lg px-3 py-2 border transition disabled:opacity-60 disabled:cursor-not-allowed ${respuestaSeleccionada === op ?
+                            (op === preguntas[indicePregunta].respuestaCorrecta ? "bg-emerald-900/40 border-emerald-600 text-emerald-100 hover:bg-emerald-900/50" : "bg-rose-900/40 border-rose-600 text-rose-100 hover:bg-rose-900/50") :
+                            "bg-slate-800 text-white border-slate-700 hover:bg-slate-700"}`}
                           onClick={() => responder(op)}
                           disabled={!!respuestaSeleccionada}
                         >{op}</Button>
@@ -1552,7 +1690,7 @@ export default function MapaColombia() {
         </section>
       )}
 
-      <section className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-white/80 dark:bg-slate-900/60 backdrop-blur p-4 shadow relative z-10">
+      <section className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-slate-900/60 backdrop-blur p-4 shadow relative z-10">
         <h2 className="text-xl font-bold mb-2 text-white">Detalles del departamento</h2>
         {seleccion ? (
           <div className="space-y-2">
