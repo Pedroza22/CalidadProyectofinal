@@ -290,9 +290,17 @@ export default function Pintura3D() {
   }
 
   const palette = [
-    "#c147e9", "#6b46a3", "#4a2c6d", "#2d1b4e",
-    "#7df9ff", "#4a90e2", "#00c2ff", "#ffffff",
-    "#ffdd00", "#ff9500", "#ff3b30", "#000000"
+    "#c147e9", "#a855f7", "#6b46a3", "#4a2c6d", "#2d1b4e", "#7c3aed",
+    "#ec4899", "#f472b6", "#db2777",
+    "#ef4444", "#dc2626", "#ff3b30",
+    "#f97316", "#ea580c", "#ff9500",
+    "#f59e0b", "#ffdd00", "#fde047",
+    "#10b981", "#22c55e", "#84cc16",
+    "#14b8a6", "#2dd4bf",
+    "#00c2ff", "#7df9ff", "#4a90e2", "#60a5fa", "#3b82f6", "#2563eb", "#1d4ed8",
+    "#6366f1", "#4f46e5",
+    "#8b5e3c", "#b45309",
+    "#ffffff", "#d1d5db", "#9ca3af", "#374151", "#000000"
   ]
 
   return (
@@ -323,7 +331,7 @@ export default function Pintura3D() {
               ))}
             </div>
             <div className="text-[#e7d7ff] text-sm pt-4">Colores</div>
-            <div className="grid grid-cols-6 gap-2">
+            <div className="grid grid-cols-8 gap-2">
               {palette.map((c) => (
                 <button key={c} onClick={() => setColor(c)} className={`w-8 h-8 rounded-lg border-2 border-[#c147e9]/50`} style={{ backgroundColor: c }} />
               ))}
