@@ -1,0 +1,360 @@
+import { useEffect, useRef, useState } from "react"
+import * as THREE from "three"
+import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
+import { Button } from "../components/ui/button"
+import { Card, CardContent } from "../components/ui/card"
+
+type Tool = "brush" | "pencil" | "spray" | "marker" | "watercolor" | "glow" | "eraser" | "textured"
+
+export default function Pintura3D() {
+  const stageRef = useRef<HTMLDivElement | null>(null)
+  const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
+  const sceneRef = useRef<THREE.Scene | null>(null)
+  const cameraRef = useRef<THREE.PerspectiveCamera | null>(null)
+  const controlsRef = useRef<OrbitControls | null>(null)
+  const planeRef = useRef<THREE.Mesh | null>(null)
+  const raycasterRef = useRef<THREE.Raycaster>(new THREE.Raycaster())
+  const drawingRef = useRef(false)
+  const currentStrokeRef = useRef<THREE.Group | null>(null)
+  const lastPointRef = useRef<THREE.Vector3 | null>(null)
+  const [tool, setTool] = useState<Tool>("brush")
+  const [color, setColor] = useState<string>("#c147e9")
+  const [size, setSize] = useState<number>(10)
+  const [strokes, setStrokes] = useState<THREE.Group[]>([])
+  const [movementLocked, setMovementLocked] = useState<boolean>(false)
+  const opacityRef = useRef<number>(1)
+  const hardnessRef = useRef<number>(0.6)
+  const particleRateRef = useRef<number>(0)
+  const toolRef = useRef<Tool>("brush")
+  const colorRef = useRef<string>("#c147e9")
+  const sizeRef = useRef<number>(10)
+
+  useEffect(() => {
+    if (!stageRef.current) return
+
+    const stage = stageRef.current
+    const w = stage.clientWidth
+    const h = Math.max(320, stage.clientHeight)
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true })
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+    renderer.setSize(w, h)
+    rendererRef.current = renderer
+    stage.appendChild(renderer.domElement)
+
+    const scene = new THREE.Scene()
+    scene.background = new THREE.Color("#0b1a2b")
+    sceneRef.current = scene
+
+    const camera = new THREE.PerspectiveCamera(55, w / h, 0.1, 100)
+    camera.position.set(8, 6, 10)
+    cameraRef.current = camera
+
+    const controls = new OrbitControls(camera, renderer.domElement)
+    controls.enableDamping = true
+    controls.dampingFactor = 0.08
+    controlsRef.current = controls
+
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7))
+    const dir = new THREE.DirectionalLight(0xffffff, 0.9)
+    dir.position.set(5, 8, 5)
+    scene.add(dir)
+
+    const planeGeo = new THREE.PlaneGeometry(20, 12)
+    const planeMat = new THREE.MeshStandardMaterial({ color: 0x6b7280, roughness: 0.9, metalness: 0.0 })
+    const plane = new THREE.Mesh(planeGeo, planeMat)
+    plane.rotation.x = -Math.PI / 6
+    plane.position.y = 0
+    planeRef.current = plane
+    scene.add(plane)
+
+    let raf = 0
+    const renderLoop = () => {
+      controls.update()
+      renderer.render(scene, camera)
+      raf = requestAnimationFrame(renderLoop)
+    }
+    renderLoop()
+
+    const onResize = () => {
+      if (!rendererRef.current || !cameraRef.current || !stageRef.current) return
+      const ww = stageRef.current.clientWidth
+      const hh = Math.max(320, stageRef.current.clientHeight)
+      rendererRef.current.setSize(ww, hh)
+      cameraRef.current.aspect = ww / hh
+      cameraRef.current.updateProjectionMatrix()
+    }
+    const onPointerDown = (e: PointerEvent) => {
+      const p = intersectOnPlane(e)
+      if (!p) return
+      drawingRef.current = true
+      const group = new THREE.Group()
+      currentStrokeRef.current = group
+      lastPointRef.current = p.clone()
+      scene.add(group)
+      setStrokes((prev) => [...prev, group])
+      paintAtPoint(p, group)
+    }
+    const onPointerMove = (e: PointerEvent) => {
+      if (!drawingRef.current) return
+      const p = intersectOnPlane(e)
+      if (!p || !currentStrokeRef.current) return
+      paintAtPoint(p, currentStrokeRef.current)
+    }
+    const onPointerUp = () => {
+      drawingRef.current = false
+      currentStrokeRef.current = null
+      lastPointRef.current = null
+    }
+
+    window.addEventListener("resize", onResize)
+    renderer.domElement.addEventListener("pointerdown", onPointerDown)
+    renderer.domElement.addEventListener("pointermove", onPointerMove)
+    window.addEventListener("pointerup", onPointerUp)
+
+    return () => {
+      window.removeEventListener("resize", onResize)
+      renderer.domElement.removeEventListener("pointerdown", onPointerDown)
+      renderer.domElement.removeEventListener("pointermove", onPointerMove)
+      window.removeEventListener("pointerup", onPointerUp)
+      cancelAnimationFrame(raf)
+      controls.dispose()
+      renderer.dispose()
+      stage.removeChild(renderer.domElement)
+    }
+  }, [])
+
+  useEffect(() => {
+    const applyPreset = (t: Tool) => {
+      if (t === "pencil") { setSize(1); opacityRef.current = 1; hardnessRef.current = 0.9; particleRateRef.current = 0; return }
+      if (t === "watercolor") { setSize(4); opacityRef.current = 0.45; hardnessRef.current = 0.4; particleRateRef.current = 0; return }
+      if (t === "brush") { setSize(12); opacityRef.current = 0.95; hardnessRef.current = 0.6; particleRateRef.current = 0; return }
+      if (t === "textured") { setSize(8); opacityRef.current = 0.8; hardnessRef.current = 0.7; particleRateRef.current = 0; return }
+      if (t === "spray") { setSize(15); opacityRef.current = 0.4; hardnessRef.current = 0.3; particleRateRef.current = 300; return }
+      if (t === "glow") { setSize(10); opacityRef.current = 0.6; hardnessRef.current = 0.6; particleRateRef.current = 120; return }
+      if (t === "eraser") { setSize(12); opacityRef.current = 1; hardnessRef.current = 0.6; particleRateRef.current = 0; return }
+      if (t === "marker") { setSize(12); opacityRef.current = 0.65; hardnessRef.current = 0.7; particleRateRef.current = 0; return }
+    }
+    applyPreset(tool)
+    toolRef.current = tool
+  }, [tool])
+
+  useEffect(() => { colorRef.current = color }, [color])
+  useEffect(() => { sizeRef.current = size }, [size])
+
+  useEffect(() => {
+    if (controlsRef.current) controlsRef.current.enabled = !movementLocked
+  }, [movementLocked])
+
+  const intersectOnPlane = (e: PointerEvent) => {
+    if (!rendererRef.current || !cameraRef.current || !planeRef.current) return null
+    const rect = rendererRef.current.domElement.getBoundingClientRect()
+    const x = ((e.clientX - rect.left) / rect.width) * 2 - 1
+    const y = -((e.clientY - rect.top) / rect.height) * 2 + 1
+    raycasterRef.current.setFromCamera(new THREE.Vector2(x, y), cameraRef.current)
+    const hit = raycasterRef.current.intersectObject(planeRef.current, false)
+    return hit.length ? hit[0].point : null
+  }
+
+  const paintAtPoint = (p: THREE.Vector3, group: THREE.Group) => {
+    const baseColor = new THREE.Color(colorRef.current)
+    const unit = Math.max(0.02, sizeRef.current * 0.02)
+    const jitter = (r: number) => (Math.random() * 2 - 1) * r
+    const t = toolRef.current
+
+    if (t === "spray") {
+      const count = Math.max(100, Math.round(Math.max(300, particleRateRef.current)))
+      const positions = new Float32Array(count * 3)
+      for (let i = 0; i < count; i++) {
+        const ix = i * 3
+        positions[ix] = p.x + jitter(unit)
+        positions[ix + 1] = p.y + jitter(unit)
+        positions[ix + 2] = p.z + jitter(unit)
+      }
+      const geo = new THREE.BufferGeometry()
+      geo.setAttribute("position", new THREE.BufferAttribute(positions, 3))
+      const mat = new THREE.PointsMaterial({ color: baseColor, size: unit * 0.8, transparent: true, opacity: opacityRef.current })
+      const pts = new THREE.Points(geo, mat)
+      group.add(pts)
+      return
+    }
+
+    if (t === "watercolor") {
+      for (let i = 0; i < 6; i++) {
+        const geo = new THREE.CircleGeometry(unit * (1.0 + Math.random()*0.8), 24)
+        const mat = new THREE.MeshBasicMaterial({ color: baseColor, transparent: true, opacity: opacityRef.current })
+        const m = new THREE.Mesh(geo, mat)
+        m.position.set(p.x + jitter(unit*0.6), p.y + jitter(unit*0.6), p.z + jitter(unit*0.6))
+        if (planeRef.current) m.quaternion.copy(planeRef.current.quaternion)
+        group.add(m)
+      }
+      return
+    }
+
+    if (t === "glow") {
+      const spriteMat = new THREE.SpriteMaterial({ color: baseColor, transparent: true, opacity: opacityRef.current, blending: THREE.AdditiveBlending })
+      const n = Math.max(1, Math.round(particleRateRef.current * 0.05))
+      for (let i = 0; i < n; i++) {
+        const spr = new THREE.Sprite(spriteMat)
+        spr.scale.set(unit * (6 + Math.random()*6), unit * (6 + Math.random()*6), 1)
+        spr.position.set(p.x + jitter(unit), p.y + jitter(unit), p.z + jitter(unit))
+        group.add(spr)
+      }
+      return
+    }
+
+    if (t === "eraser") {
+      const planeColor = (planeRef.current?.material as THREE.MeshStandardMaterial).color
+      const geo = new THREE.SphereGeometry(unit, 16, 16)
+      const mat = new THREE.MeshStandardMaterial({ color: planeColor.clone(), transparent: true, opacity: 1 })
+      const m = new THREE.Mesh(geo, mat)
+      m.position.copy(p)
+      group.add(m)
+      return
+    }
+    if (t === "marker") {
+      const geo = new THREE.CircleGeometry(unit * 1.2, 16)
+      const mat = new THREE.MeshBasicMaterial({ color: baseColor, transparent: true, opacity: opacityRef.current, side: THREE.DoubleSide })
+      const m = new THREE.Mesh(geo, mat)
+      m.position.copy(p)
+      if (planeRef.current) m.quaternion.copy(planeRef.current.quaternion)
+      group.add(m)
+      return
+    }
+
+    if (t === "pencil") {
+      const a = lastPointRef.current || p.clone()
+      const b = p.clone()
+      const curve = new THREE.CatmullRomCurve3([a, b])
+      const geo = new THREE.TubeGeometry(curve, 1, unit * 0.25, 8, false)
+      const mat = new THREE.MeshBasicMaterial({ color: baseColor })
+      const m = new THREE.Mesh(geo, mat)
+      group.add(m)
+      lastPointRef.current = b.clone()
+      return
+    }
+
+    if (t === "brush") {
+      const a = lastPointRef.current || p.clone()
+      const b = p.clone()
+      const curve = new THREE.CatmullRomCurve3([a, b])
+      const geo = new THREE.TubeGeometry(curve, 2, unit * 0.9, 12, false)
+      const mat = new THREE.MeshStandardMaterial({ color: baseColor, roughness: 0.8, metalness: 0.0 })
+      const m = new THREE.Mesh(geo, mat)
+      group.add(m)
+      lastPointRef.current = b.clone()
+      return
+    }
+
+    if (t === "textured") {
+      for (let i = 0; i < 3; i++) {
+        const r = unit * (0.6 + Math.random()*0.8)
+        const mat = new THREE.MeshStandardMaterial({ color: baseColor.clone().offsetHSL(0, 0, (Math.random()-0.5)*0.1), roughness: 0.9, metalness: 0.0, transparent: true, opacity: opacityRef.current })
+        const geo = new THREE.BoxGeometry(r*0.7, r*0.7, r*0.7)
+        const m = new THREE.Mesh(geo, mat)
+        m.position.set(p.x + jitter(unit*0.4), p.y + jitter(unit*0.4), p.z + jitter(unit*0.4))
+        group.add(m)
+      }
+      lastPointRef.current = p.clone()
+      return
+    }
+
+    const geo = new THREE.SphereGeometry(unit, 16, 16)
+    const mat = new THREE.MeshStandardMaterial({ color: baseColor, opacity: 0.95 })
+    const m = new THREE.Mesh(geo, mat)
+    m.position.copy(p)
+    group.add(m)
+  }
+
+  const undo = () => {
+    const last = strokes[strokes.length - 1]
+    if (!last || !sceneRef.current) return
+    sceneRef.current.remove(last)
+    setStrokes((prev) => prev.slice(0, -1))
+  }
+
+  const clearAll = () => {
+    if (!sceneRef.current) return
+    strokes.forEach((g) => sceneRef.current!.remove(g))
+    setStrokes([])
+  }
+
+  const saveImage = () => {
+    if (!rendererRef.current) return
+    const url = rendererRef.current.domElement.toDataURL("image/png")
+    const a = document.createElement("a")
+    a.href = url
+    a.download = "pintura3d.png"
+    a.click()
+  }
+
+  const palette = [
+    "#c147e9", "#6b46a3", "#4a2c6d", "#2d1b4e",
+    "#7df9ff", "#4a90e2", "#00c2ff", "#ffffff",
+    "#ffdd00", "#ff9500", "#ff3b30", "#000000"
+  ]
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
+        <Card className="p-0 bg-gradient-to-br from-[#2d1b4e]/95 via-[#4a2c6d]/95 to-[#6b46a3]/95 border-[#c147e9] border-2">
+          <CardContent className="p-4 space-y-4">
+            <div className="text-[#e7d7ff] text-sm">Herramientas</div>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: "Detalle fino", key: "pencil" },
+                { label: "Suave", key: "watercolor" },
+                { label: "Base", key: "brush" },
+                { label: "Texturizado", key: "textured" },
+                { label: "Spray", key: "spray" },
+                { label: "Efecto", key: "glow" },
+                { label: "Marcador", key: "marker" },
+                { label: "Goma", key: "eraser" },
+              ].map(({ label, key }) => (
+                <Button key={key} onClick={() => setTool(key as Tool)} className={`${tool===key?"bg-[#c147e9] text-white":"bg-[#2d1b4e] text-[#e7d7ff] hover:bg-[#4a2c6d]"}`}>{label}</Button>
+              ))}
+            </div>
+            <div className="text-[#e7d7ff] text-sm pt-4">Colores</div>
+            <div className="grid grid-cols-6 gap-2">
+              {palette.map((c) => (
+                <button key={c} onClick={() => setColor(c)} className={`w-8 h-8 rounded-lg border-2 border-[#c147e9]/50`} style={{ backgroundColor: c }} />
+              ))}
+            </div>
+            <div className="pt-4">
+              <div className="text-[#e7d7ff] text-sm pb-1">Grosor</div>
+              <input type="range" min={1} max={25} value={size} onChange={(e)=>setSize(parseInt(e.target.value))} className="w-full" />
+              <div className="text-[#e7d7ff] text-sm mt-1">{size}px</div>
+            </div>
+            <div className="pt-2">
+              <Button onClick={() => setMovementLocked(!movementLocked)} className={`${movementLocked?"bg-[#ff3b30] text-white":"bg-[#4a90e2] text-white"}`}>
+                {movementLocked ? "Desbloquear movimiento" : "Bloquear movimiento"}
+              </Button>
+            </div>
+            <div className="flex flex-col gap-2 pt-4">
+              <Button onClick={undo} className="bg-[#4a90e2] text-white">Deshacer</Button>
+              <Button onClick={clearAll} className="bg-[#ff3b30] text-white">Limpiar</Button>
+              <Button onClick={saveImage} className="bg-[#6b46a3] text-white">Guardar</Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="p-0 bg-gradient-to-br from-[#2d1b4e]/95 via-[#4a2c6d]/95 to-[#6b46a3]/95 border-[#c147e9] border-2">
+          <CardContent className="p-4">
+            <div ref={stageRef} className="w-full h-[520px] rounded-xl overflow-hidden bg-[#0b1a2b] border-2 border-[#c147e9]/50 shadow-[0_0_40px_rgba(193,71,233,0.35)]" />
+            <div className="mt-4 grid grid-cols-3 gap-4">
+              <div className="rounded-xl bg-[#2d1b4e]/70 p-4 text-[#e7d7ff]">Trazos
+                <div className="text-2xl font-bold text-[#7df9ff]">{strokes.length}</div>
+              </div>
+              <div className="rounded-xl bg-[#2d1b4e]/70 p-4 text-[#e7d7ff]">Herramienta
+                <div className="text-lg font-semibold text-white capitalize">{tool}</div>
+              </div>
+              <div className="rounded-xl bg-[#2d1b4e]/70 p-4 text-[#e7d7ff]">Color
+                <div className="mt-2 w-8 h-8 rounded-lg border-2 border-[#c147e9]/50" style={{ backgroundColor: color }} />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  )
+}
