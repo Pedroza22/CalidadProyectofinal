@@ -27,7 +27,9 @@ export default function MapaColombia() {
     try {
       const synth = (window as any).speechSynthesis as SpeechSynthesis | undefined;
       synth?.cancel();
-    } catch {}
+    } catch (err) {
+      console.warn('resetView: speechSynthesis cancel failed', err);
+    }
     setZoom(1);
     setPan({ x: 0, y: 0 });
     const wrapper = zoomWrapperRef.current;
