@@ -1,4 +1,5 @@
 import { render, screen } from "@testing-library/react";
+import "@testing-library/jest-dom";
 import Navbar from "../../src/components/Navbar";
 
 beforeEach(() => {
@@ -6,13 +7,13 @@ beforeEach(() => {
 });
 
 describe("Navbar - Renderizado", () => {
-  test("renderiza el título principal 'UCC : Prácticas Desarrollo'", () => {
+  test("muestra el icono de usuario", () => {
     render(<Navbar />);
-    expect(screen.getByText(/UCC : Prácticas Desarrollo/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Usuario/i)).toBeInTheDocument();
   });
 
-  test("renderiza el botón con el texto 'Tema'", () => {
+  test("no muestra el botón de tema", () => {
     render(<Navbar />);
-    expect(screen.getByRole("button", { name: /Tema/i })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Tema/i })).toBeNull();
   });
 });

@@ -2,7 +2,10 @@
 export const DRAG_THRESHOLD = 1;
 
 export function panFactor(zoom: number): number {
-  return 20 * (zoom * zoom);
+  // Mantiene desplazamiento visual constante independientemente del zoom.
+  // translate(px) se escala por `scale(zoom)`, por lo que usamos 1/zoom.
+  const safeZoom = Math.max(zoom, 0.0001);
+  return 1 / safeZoom;
 }
 
 export function transitionForDragging(isDragging: boolean): string {
