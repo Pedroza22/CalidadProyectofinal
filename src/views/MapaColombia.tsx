@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { departamentos, actividadesPorRegion, type Departamento } from "../data/colombiaDepartamentos";
+import { Card, CardContent } from "../components/ui/card";
+import { Badge } from "../components/ui/badge";
+import { Button } from "../components/ui/button";
 
 // Vista fusionada: Mapa SVG interactivo + panel de información
 // Al hacer clic en un departamento (en el SVG), se muestra su información.
@@ -1241,32 +1244,45 @@ export default function MapaColombia() {
 
   return (
     <div className="space-y-6">
-      <header className="flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+      <header className="space-y-3">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-slate-100">Mapa de Colombia</h1>
-          <p className="text-slate-600 dark:text-slate-300">Haz clic en un departamento para ver su información.</p>
+          <h1 className="text-4xl md:text-5xl font-black">
+            <span className="bg-gradient-to-r from-yellow-400 via-blue-500 to-red-500 bg-clip-text text-transparent">Explora Colombia</span>
+          </h1>
+          <p className="text-slate-700 dark:text-slate-300">Haz clic en un departamento y descubre datos curiosos.</p>
         </div>
-        <div className="flex gap-2">
-          <input
-            type="text"
-            placeholder="Buscar departamento…"
-            value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            className="border rounded-lg px-3 py-2 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
-          />
-          <select
-            value={regionFiltro}
-            onChange={(e) => setRegionFiltro(e.target.value)}
-            className="border rounded-lg px-3 py-2 bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700"
-          >
-            {regiones.map((r) => (
-              <option key={r} value={r}>{r}</option>
-            ))}
-          </select>
+        <div className="flex flex-col md:flex-row gap-3 md:items-center md:justify-between">
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="Buscar departamento…"
+              value={busqueda}
+              onChange={(e) => setBusqueda(e.target.value)}
+              className="border rounded-full px-4 py-2 bg-white dark:bg-slate-900 border-amber-300 dark:border-amber-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+            />
+            <select
+              value={regionFiltro}
+              onChange={(e) => setRegionFiltro(e.target.value)}
+              className="border rounded-full px-4 py-2 bg-white dark:bg-slate-900 border-amber-300 dark:border-amber-700 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+            >
+              {regiones.map((r) => (
+                <option key={r} value={r}>{r}</option>
+              ))}
+            </select>
+          </div>
+          {seleccion && (
+            <div className="flex flex-wrap gap-2">
+              <Badge className="border-amber-400 bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">Región: {seleccion.region}</Badge>
+              <Badge className="border-sky-400 bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300">Capital: {seleccion.capital}</Badge>
+              {typeof seleccion.poblacionAprox === 'number' && (
+                <Badge className="border-emerald-400 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">Población: {seleccion.poblacionAprox.toLocaleString('es-CO')}</Badge>
+              )}
+            </div>
+          )}
         </div>
       </header>
 
-      <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
+      <section className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-white/90 dark:bg-slate-900/70 p-4 shadow">
         {svgDisponible ? (
           <div className="w-full overflow-auto">
               <style>
@@ -1277,11 +1293,11 @@ export default function MapaColombia() {
             `}
               </style>
             <div className="flex items-center gap-2 mb-2">
-              <button className="px-2 py-1 border rounded" onClick={() => setZoom((z)=>Math.min(3, parseFloat((z*1.15).toFixed(2))))}>+
-              </button>
-              <button className="px-2 py-1 border rounded" onClick={() => setZoom((z)=>Math.max(0.5, parseFloat((z*0.85).toFixed(2))))}>-
-              </button>
-              <button className="px-2 py-1 border rounded" onClick={() => setZoom(1)}>Reset</button>
+              <Button className="rounded-full px-3 py-2 bg-amber-400 text-slate-900 hover:bg-amber-500 border border-amber-500/50 shadow-sm" onClick={() => setZoom((z)=>Math.min(3, parseFloat((z*1.15).toFixed(2))))}>+
+              </Button>
+              <Button className="rounded-full px-3 py-2 bg-sky-400 text-slate-900 hover:bg-sky-500 border border-sky-500/50 shadow-sm" onClick={() => setZoom((z)=>Math.max(0.5, parseFloat((z*0.85).toFixed(2))))}>-
+              </Button>
+              <Button className="rounded-full px-3 py-2 bg-emerald-400 text-slate-900 hover:bg-emerald-500 border border-emerald-500/50 shadow-sm" onClick={() => setZoom(1)}>Reset</Button>
               <span className="text-xs text-slate-600 dark:text-slate-300">Zoom: {Math.round(zoom*100)}%</span>
             </div>
             <div ref={svgContainerRef} className="mx-auto" style={{ maxWidth: 900, minHeight: 400 }} />
@@ -1298,7 +1314,7 @@ export default function MapaColombia() {
 
       {/* Lista alternativa interactiva (si no hay SVG) */}
       {!svgDisponible && (
-        <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
+        <section className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-white/90 dark:bg-slate-900/70 p-4 shadow">
           <h2 className="text-lg font-semibold mb-2">Departamentos</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
             {listaFiltrada.map((d) => (
@@ -1319,13 +1335,15 @@ export default function MapaColombia() {
         </section>
       )}
 
-      <section className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4">
-        <h2 className="text-lg font-semibold mb-2">Detalle</h2>
+      <section className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-white/90 dark:bg-slate-900/70 p-4 shadow">
+        <h2 className="text-xl font-bold mb-2 text-slate-800 dark:text-slate-100">Detalles del departamento</h2>
         {seleccion ? (
           <div className="space-y-2">
-            <div className="text-slate-700 dark:text-slate-200"><span className="font-medium">Departamento:</span> {seleccion.nombre}</div>
-            <div className="text-slate-700 dark:text-slate-200"><span className="font-medium">Capital:</span> {seleccion.capital}</div>
-            <div className="text-slate-700 dark:text-slate-200"><span className="font-medium">Región:</span> {seleccion.region}</div>
+            <div className="flex flex-wrap gap-2 mb-1">
+              <Badge className="border-amber-400 bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300">{seleccion.nombre}</Badge>
+              <Badge className="border-sky-400 bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300">Capital: {seleccion.capital}</Badge>
+              <Badge className="border-emerald-400 bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">Región: {seleccion.region}</Badge>
+            </div>
             {typeof seleccion.poblacionAprox === "number" && (
               <div className="text-slate-700 dark:text-slate-200"><span className="font-medium">Población aprox.:</span> {seleccion.poblacionAprox.toLocaleString("es-CO")}</div>
             )}
