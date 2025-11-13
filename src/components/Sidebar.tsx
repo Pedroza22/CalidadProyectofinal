@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { FaHome, FaCube, FaColumns, FaMicrophone, FaShapes, FaCalculator, FaRuler, FaKey, FaMouse, FaList, FaSun, FaMap } from "react-icons/fa";
+import { FaSun, FaMap } from "react-icons/fa";
 
 interface SidebarItem {
   label: string;
@@ -9,26 +9,14 @@ interface SidebarItem {
 }
 
 const mainItems: SidebarItem[] = [
-  { label: "Inicio", route: "/", icon: <FaHome /> },
-  { label: "Three.js Demo", route: "/three", icon: <FaCube /> },
-  { label: "Responsive Layouts", route: "/layouts", icon: <FaColumns /> },
-  { label: "Text-to-Speech", route: "/tts", icon: <FaMicrophone /> },
-  { label: "Figuras Geometricas", route: "/three_2", icon: <FaShapes /> },
   { label: "Mapa Colombia", route: "/mapa-colombia", icon: <FaMap /> },
   { label: "Sistema Solar", route: "/sistema-solar", icon: <FaSun /> },
 ];
 
-const exerciseItems: SidebarItem[] = [
-  { label: "Tablas de Multiplicar", route: "/tablasmul", icon: <FaCalculator /> },
-  { label: "Conversor de Unidades", route: "/conversorunid", icon: <FaRuler /> },
-  { label: "Validadador de Contraseñas", route: "/validcontrasena", icon: <FaKey /> },
-  { label: "Contador de Clics con Almacenamiento", route: "/contadorclics", icon: <FaMouse /> },
-  { label: "Lista de Tareas", route: "/listareas", icon: <FaList /> },
-];
+ 
 
 export default function Sidebar() {
-  const [openMain, setOpenMain] = useState(false);
-  const [openExercises, setOpenExercises] = useState(false);
+  const [openMain, setOpenMain] = useState(true);
 
   const renderNavItem = ({ label, route, icon }: SidebarItem) => (
     <NavLink
@@ -59,16 +47,7 @@ export default function Sidebar() {
         </button>
         {openMain && <div className="pl-4 space-y-1">{mainItems.map(renderNavItem)}</div>}
 
-        {/* Acordeón Exercises */}
-        <button
-          onClick={() => setOpenExercises(!openExercises)}
-          className="w-full text-left flex items-center justify-between rounded-lg px-3 py-2 text-slate-700 dark:text-slate-300 
-                     hover:bg-slate-50 dark:hover:bg-slate-800 font-medium"
-        >
-          Ejercicios - Jtest
-          <span>{openExercises ? "▲" : "▼"}</span>
-        </button>
-        {openExercises && <div className="pl-4 space-y-1">{exerciseItems.map(renderNavItem)}</div>}
+        
 
       </div>
     </aside>
