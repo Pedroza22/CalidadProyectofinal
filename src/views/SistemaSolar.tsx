@@ -207,7 +207,7 @@ export default function SistemaSolar() {
 
   return (
     <div className="min-h-screen relative overflow-hidden bg-gradient-to-b from-[#1a0b2e] via-[#2d1b4e] to-[#4a2c6d]">
-      <div className="fixed inset-0 z-0">
+      <div className="fixed inset-0 z-0 pointer-events-none">
         {stars.map((star, i) => (
           <div
             key={i}
@@ -361,8 +361,8 @@ export default function SistemaSolar() {
       </div>
 
       {selectedPlanet && (
-        <div className="fixed inset-x-0 bottom-0 z-50 animate-slideUp">
-          <div className="container mx-auto px-4 pb-4">
+        <div className="fixed inset-x-0 bottom-0 z-50 animate-slideUp pointer-events-none">
+          <div className="container mx-auto px-4 pb-4 pointer-events-auto">
             <Card className="bg-gradient-to-br from-[#2d1b4e]/98 via-[#4a2c6d]/98 to-[#6b46a3]/98 border-[#c147e9] border-2 backdrop-blur-xl shadow-[0_-10px_50px_rgba(193,71,233,0.3)]">
               <CardContent className="p-6 md:p-8">
                 <div className="flex items-start justify-between mb-6">
