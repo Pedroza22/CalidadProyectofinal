@@ -7,6 +7,17 @@ import { Card, CardContent } from "../components/ui/card"
 
 type Tool = "brush" | "pencil" | "spray" | "marker" | "watercolor" | "glow" | "eraser" | "textured"
 
+const toolLabels: Record<Tool, string> = {
+  pencil: "Detalle fino",
+  watercolor: "Suave",
+  brush: "Base",
+  textured: "Texturizado",
+  spray: "Spray",
+  glow: "Efecto",
+  marker: "Marcador",
+  eraser: "Goma",
+}
+
 export default function Pintura3D() {
   const stageRef = useRef<HTMLDivElement | null>(null)
   const rendererRef = useRef<THREE.WebGLRenderer | null>(null)
@@ -29,6 +40,98 @@ export default function Pintura3D() {
   const toolRef = useRef<Tool>("brush")
   const colorRef = useRef<string>("#c147e9")
   const sizeRef = useRef<number>(10)
+  const voiceRef = useRef<SpeechSynthesisVoice | null>(null)
+
+  useEffect(() => {
+    const setVoice = () => {
+      const voices = window.speechSynthesis.getVoices()
+      const lower = (s: string) => s.toLowerCase()
+      const candidates = voices.filter((v) => v.lang && lower(v.lang).startsWith("es"))
+      const preferLang = ["es-mx", "es_419", "es-419", "es-es", "es-co", "es"]
+      const preferName = ["sabina", "mexico", "latam", "español", "spanish"]
+      let chosen: SpeechSynthesisVoice | null = null
+      for (const p of preferLang) {
+        const m = candidates.find((v) => lower(v.lang).startsWith(p))
+        if (m) { chosen = m; break }
+      }
+      if (!chosen) {
+        const m = candidates.find((v) => v.name && preferName.some((n) => lower(v.name).includes(n)))
+        if (m) chosen = m
+      }
+      voiceRef.current = chosen || candidates[0] || null
+    }
+    setVoice()
+    window.speechSynthesis.onvoiceschanged = setVoice
+  }, [])
+
+  const speak = (text: string) => {
+    if (!("speechSynthesis" in window)) return
+    const v = voiceRef.current
+    const isSpanish = !!v && v.lang?.toLowerCase().startsWith("es")
+    if (!isSpanish) {
+      try {
+        const Ctx = (window as any).AudioContext || (window as any).webkitAudioContext
+        const ctx = Ctx ? new Ctx() : null
+        if (ctx) {
+          const osc = ctx.createOscillator()
+          const gain = ctx.createGain()
+          osc.type = "sine"
+          osc.frequency.value = 880
+          gain.gain.setValueAtTime(0.001, ctx.currentTime)
+          gain.gain.exponentialRampToValueAtTime(0.15, ctx.currentTime + 0.02)
+          gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.18)
+          osc.connect(gain)
+          gain.connect(ctx.destination)
+          osc.start()
+          osc.stop(ctx.currentTime + 0.2)
+          setTimeout(() => ctx.close(), 250)
+        }
+      } catch (e) { void e }
+      return
+    }
+    const utter = new SpeechSynthesisUtterance(text)
+    if (v) utter.voice = v
+    utter.lang = "es-MX"
+    utter.rate = 0.98
+    utter.pitch = 1.1
+    utter.volume = 1
+    window.speechSynthesis.cancel()
+    window.speechSynthesis.speak(utter)
+  }
+
+  const colorName = (hex: string) => {
+    const r = parseInt(hex.slice(1, 3), 16) / 255
+    const g = parseInt(hex.slice(3, 5), 16) / 255
+    const b = parseInt(hex.slice(5, 7), 16) / 255
+    const max = Math.max(r, g, b)
+    const min = Math.min(r, g, b)
+    const l = (max + min) / 2
+    const d = max - min
+    let h = 0
+    const s = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1))
+    if (d !== 0) {
+      if (max === r) h = ((g - b) / d) % 6
+      else if (max === g) h = (b - r) / d + 2
+      else h = (r - g) / d + 4
+      h *= 60
+      if (h < 0) h += 360
+    }
+    if (l <= 0.15) return "negro"
+    if (l >= 0.85) return "blanco"
+    if (s <= 0.2) return "gris"
+    if (h < 15) return "rojo"
+    if (h < 35) return "naranja"
+    if (h < 60) return "amarillo"
+    if (h < 150) return "verde"
+    if (h < 190) return "turquesa"
+    if (h < 210) return "cian"
+    if (h < 240) return "azul"
+    if (h < 260) return "índigo"
+    if (h < 290) return "violeta"
+    if (h < 320) return "magenta"
+    if (h < 345) return "rosa"
+    return "rojo"
+  }
 
   useEffect(() => {
     if (!stageRef.current) return
@@ -304,18 +407,21 @@ export default function Pintura3D() {
   ]
 
   return (
-    <div className="space-y-6">
-      <div className="text-center space-y-3">
-        <h1 className="text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-[#c147e9] via-[#7df9ff] to-[#ffdd00] bg-clip-text text-transparent">
-          Pintura3D
+    <div className="relative space-y-6">
+      <div className="pointer-events-none absolute inset-0 z-0">
+        <div className="w-full h-full rounded-3xl overflow-hidden ring-1 ring-[#7df9ff]/15 bg-gradient-to-b from-[#0e3a66]/55 via-[#1e40af]/50 to-[#0e3a66]/55" />
+      </div>
+      <div className="relative z-10 text-center space-y-4">
+        <h1 className="text-7xl md:text-8xl font-extrabold bg-gradient-to-r from-[#ff00cc] via-[#00f0ff] to-[#ffe600] bg-clip-text text-transparent drop-shadow-[0_0_28px_rgba(0,240,255,0.6)]">
+          PintaColor3D
         </h1>
-        <div className="max-w-3xl mx-auto text-[#e7d7ff] text-sm md:text-base leading-relaxed">
-          <div>🎨 ¡Bienvenido a Pinta3D!</div>
-          <div>Aquí podrás crear dibujos que flotan en el aire, mezclar colores mágicos y ver tus obras desde todos los lados.</div>
-          <div>🚀 ¡Gira, pinta, imagina y deja volar tu creatividad!</div>
+        <div className="max-w-3xl mx-auto">
+          <div className="text-lg md:text-2xl font-semibold text-center bg-gradient-to-r from-[#ff00cc] via-[#00f0ff] to-[#ffe600] bg-clip-text text-transparent">
+            🎨 ¡Bienvenido! Pinta en 3D, mezcla colores mágicos y gira tu obra
+          </div>
         </div>
       </div>
-      <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
+      <div className="relative z-10 grid grid-cols-1 lg:grid-cols-[360px_1fr] gap-6">
         <Card className="p-0 bg-gradient-to-br from-[#2d1b4e]/95 via-[#4a2c6d]/95 to-[#6b46a3]/95 border-[#c147e9] border-2">
           <CardContent className="p-4 space-y-4">
             <div className="text-[#e7d7ff] text-sm">Herramientas</div>
@@ -332,8 +438,8 @@ export default function Pintura3D() {
               ].map(({ label, key, grad, Icon }) => (
                 <Button
                   key={key}
-                  onClick={() => setTool(key as Tool)}
-                  className={`rounded-full px-4 py-2 bg-gradient-to-r ${grad} text-white shadow hover:opacity-95 ${tool===key?"ring-2 ring-white":"opacity-90"} gap-2`}
+                  onClick={() => { setTool(key as Tool); speak(`Elegiste ${label}`) }}
+                  className={`rounded-full px-4 py-2 bg-gradient-to-r ${grad} text-white shadow hover:opacity-95 gap-2 focus:ring-2 focus:ring-[#7df9ff] focus:shadow-[0_0_18px_rgba(125,249,255,0.65)] active:shadow-[0_0_24px_rgba(125,249,255,0.85)] ${tool===key?"ring-2 ring-[#7df9ff] shadow-[0_0_18px_rgba(125,249,255,0.65)]":"opacity-90"}`}
                 >
                   <Icon className="w-4 h-4" />
                   {label}
@@ -343,7 +449,12 @@ export default function Pintura3D() {
             <div className="text-[#e7d7ff] text-sm pt-4">Colores</div>
             <div className="grid grid-cols-8 gap-2">
               {palette.map((c) => (
-                <button key={c} onClick={() => setColor(c)} className={`w-8 h-8 rounded-lg border-2 border-[#c147e9]/50`} style={{ backgroundColor: c }} />
+                <button
+                  key={c}
+                  onClick={() => { setColor(c); speak(`Color ${colorName(c)}`) }}
+                  className={`w-8 h-8 rounded-lg border-2 border-[#c147e9]/50 focus:ring-2 focus:ring-[#7df9ff] focus:shadow-[0_0_18px_rgba(125,249,255,0.65)] active:shadow-[0_0_24px_rgba(125,249,255,0.85)] ${color===c?"ring-2 ring-[#7df9ff] shadow-[0_0_18px_rgba(125,249,255,0.65)]":""}`}
+                  style={{ backgroundColor: c }}
+                />
               ))}
             </div>
             <div className="pt-4">
@@ -353,23 +464,23 @@ export default function Pintura3D() {
             </div>
             <div className="pt-2">
               <Button
-                onClick={() => setMovementLocked(!movementLocked)}
-                className={`rounded-full px-4 py-2 bg-gradient-to-r text-white shadow hover:opacity-95 ${movementLocked?"from-red-500 to-rose-600":"from-sky-500 to-blue-600"} gap-2`}
+                onClick={() => { const v = !movementLocked; setMovementLocked(v); speak(v?"Movimiento bloqueado":"Movimiento desbloqueado") }}
+                className={`rounded-full px-4 py-2 bg-gradient-to-r text-white shadow hover:opacity-95 gap-2 focus:ring-2 focus:ring-[#7df9ff] focus:shadow-[0_0_18px_rgba(125,249,255,0.65)] active:shadow-[0_0_24px_rgba(125,249,255,0.85)] ${movementLocked?"from-red-500 to-rose-600":"from-sky-500 to-blue-600"}`}
               >
                 {movementLocked ? <FaLockOpen className="w-4 h-4" /> : <FaLock className="w-4 h-4" />}
                 {movementLocked ? "Desbloquear movimiento" : "Bloquear movimiento"}
               </Button>
             </div>
             <div className="flex flex-col gap-2 pt-4">
-              <Button onClick={undo} className="rounded-full px-4 py-2 bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow hover:opacity-95 gap-2">
+              <Button onClick={() => { undo(); speak("Deshacer") }} className="rounded-full px-4 py-2 bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow hover:opacity-95 gap-2 focus:ring-2 focus:ring-[#7df9ff] focus:shadow-[0_0_18px_rgba(125,249,255,0.65)] active:shadow-[0_0_24px_rgba(125,249,255,0.85)]">
                 <FaUndo className="w-4 h-4" />
                 Deshacer
               </Button>
-              <Button onClick={clearAll} className="rounded-full px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white shadow hover:opacity-95 gap-2">
+              <Button onClick={() => { clearAll(); speak("Lienzo limpio") }} className="rounded-full px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white shadow hover:opacity-95 gap-2 focus:ring-2 focus:ring-[#7df9ff] focus:shadow-[0_0_18px_rgba(125,249,255,0.65)] active:shadow-[0_0_24px_rgba(125,249,255,0.85)]">
                 <FaTrashAlt className="w-4 h-4" />
                 Limpiar
               </Button>
-              <Button onClick={saveImage} className="rounded-full px-4 py-2 bg-gradient-to-r from-purple-500 to-violet-600 text-white shadow hover:opacity-95 gap-2">
+              <Button onClick={() => { saveImage(); speak("Imagen guardada") }} className="rounded-full px-4 py-2 bg-gradient-to-r from-purple-500 to-violet-600 text-white shadow hover:opacity-95 gap-2 focus:ring-2 focus:ring-[#7df9ff] focus:shadow-[0_0_18px_rgba(125,249,255,0.65)] active:shadow-[0_0_24px_rgba(125,249,255,0.85)]">
                 <FaSave className="w-4 h-4" />
                 Guardar
               </Button>
@@ -385,10 +496,43 @@ export default function Pintura3D() {
                 <div className="text-2xl font-bold text-[#7df9ff]">{strokes.length}</div>
               </div>
               <div className="rounded-xl bg-[#2d1b4e]/70 p-4 text-[#e7d7ff]">Herramienta
-                <div className="text-lg font-semibold text-white capitalize">{tool}</div>
+                <div className="text-lg font-semibold text-white">{toolLabels[tool]}</div>
               </div>
               <div className="rounded-xl bg-[#2d1b4e]/70 p-4 text-[#e7d7ff]">Color
                 <div className="mt-2 w-8 h-8 rounded-lg border-2 border-[#c147e9]/50" style={{ backgroundColor: color }} />
+              </div>
+            </div>
+            <div className="mt-6 space-y-4">
+              <div className="text-center">
+                <h2 className="text-2xl md:text-3xl font-extrabold bg-gradient-to-r from-[#7df9ff] via-[#c147e9] to-[#ffdd00] bg-clip-text text-transparent">
+                  PintaColor3D: ¡Así de fácil!
+                </h2>
+              </div>
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-[#0ea5e9]/40 to-[#7df9ff]/40 border border-[#7df9ff]/30 text-white">
+                  <FaPaintBrush className="w-6 h-6" />
+                  <span className="font-semibold">Elige tu herramienta favorita</span>
+                </div>
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-[#22c55e]/40 to-[#84cc16]/40 border border-[#84cc16]/30 text-white">
+                  <FaTint className="w-6 h-6" />
+                  <span className="font-semibold">Mezcla y elige un color brillante</span>
+                </div>
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-[#f59e0b]/40 to-[#ffdd00]/40 border border-[#ffdd00]/30 text-white">
+                  <FaLock className="w-6 h-6" />
+                  <span className="font-semibold">Bloquea el movimiento si quieres pintar fijo</span>
+                </div>
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-[#8b5cf6]/40 to-[#6366f1]/40 border border-[#6366f1]/30 text-white">
+                  <FaSprayCan className="w-6 h-6" />
+                  <span className="font-semibold">Arrastra sobre el tablero para dibujar</span>
+                </div>
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-[#ef4444]/40 to-[#dc2626]/40 border border-[#ef4444]/30 text-white">
+                  <FaUndo className="w-6 h-6" />
+                  <span className="font-semibold">Si te equivocas, usa Deshacer</span>
+                </div>
+                <div className="flex items-center gap-3 p-4 rounded-xl bg-gradient-to-r from-[#c147e9]/40 to-[#a855f7]/40 border border-[#c147e9]/30 text-white">
+                  <FaSave className="w-6 h-6" />
+                  <span className="font-semibold">Guarda tu obra cuando te guste</span>
+                </div>
               </div>
             </div>
           </CardContent>
