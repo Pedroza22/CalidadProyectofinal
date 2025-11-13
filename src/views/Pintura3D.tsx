@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react"
 import * as THREE from "three"
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js"
 import { Button } from "../components/ui/button"
+import { FaPencilAlt, FaPaintBrush, FaSprayCan, FaHighlighter, FaEraser, FaMagic, FaTint, FaChessBoard, FaLock, FaLockOpen, FaUndo, FaTrashAlt, FaSave } from "react-icons/fa"
 import { Card, CardContent } from "../components/ui/card"
 
 type Tool = "brush" | "pencil" | "spray" | "marker" | "watercolor" | "glow" | "eraser" | "textured"
@@ -302,16 +303,23 @@ export default function Pintura3D() {
             <div className="text-[#e7d7ff] text-sm">Herramientas</div>
             <div className="grid grid-cols-2 gap-2">
               {[
-                { label: "Detalle fino", key: "pencil" },
-                { label: "Suave", key: "watercolor" },
-                { label: "Base", key: "brush" },
-                { label: "Texturizado", key: "textured" },
-                { label: "Spray", key: "spray" },
-                { label: "Efecto", key: "glow" },
-                { label: "Marcador", key: "marker" },
-                { label: "Goma", key: "eraser" },
-              ].map(({ label, key }) => (
-                <Button key={key} onClick={() => setTool(key as Tool)} className={`${tool===key?"bg-[#c147e9] text-white":"bg-[#2d1b4e] text-[#e7d7ff] hover:bg-[#4a2c6d]"}`}>{label}</Button>
+                { label: "Detalle fino", key: "pencil", grad: "from-yellow-400 to-orange-500", Icon: FaPencilAlt },
+                { label: "Suave", key: "watercolor", grad: "from-pink-500 to-fuchsia-600", Icon: FaTint },
+                { label: "Base", key: "brush", grad: "from-purple-500 to-violet-600", Icon: FaPaintBrush },
+                { label: "Texturizado", key: "textured", grad: "from-rose-500 to-red-600", Icon: FaChessBoard },
+                { label: "Spray", key: "spray", grad: "from-cyan-400 to-sky-500", Icon: FaSprayCan },
+                { label: "Efecto", key: "glow", grad: "from-indigo-500 to-blue-600", Icon: FaMagic },
+                { label: "Marcador", key: "marker", grad: "from-green-400 to-emerald-600", Icon: FaHighlighter },
+                { label: "Goma", key: "eraser", grad: "from-lime-400 to-green-600", Icon: FaEraser },
+              ].map(({ label, key, grad, Icon }) => (
+                <Button
+                  key={key}
+                  onClick={() => setTool(key as Tool)}
+                  className={`rounded-full px-4 py-2 bg-gradient-to-r ${grad} text-white shadow hover:opacity-95 ${tool===key?"ring-2 ring-white":"opacity-90"} gap-2`}
+                >
+                  <Icon className="w-4 h-4" />
+                  {label}
+                </Button>
               ))}
             </div>
             <div className="text-[#e7d7ff] text-sm pt-4">Colores</div>
@@ -326,14 +334,27 @@ export default function Pintura3D() {
               <div className="text-[#e7d7ff] text-sm mt-1">{size}px</div>
             </div>
             <div className="pt-2">
-              <Button onClick={() => setMovementLocked(!movementLocked)} className={`${movementLocked?"bg-[#ff3b30] text-white":"bg-[#4a90e2] text-white"}`}>
+              <Button
+                onClick={() => setMovementLocked(!movementLocked)}
+                className={`rounded-full px-4 py-2 bg-gradient-to-r text-white shadow hover:opacity-95 ${movementLocked?"from-red-500 to-rose-600":"from-sky-500 to-blue-600"} gap-2`}
+              >
+                {movementLocked ? <FaLockOpen className="w-4 h-4" /> : <FaLock className="w-4 h-4" />}
                 {movementLocked ? "Desbloquear movimiento" : "Bloquear movimiento"}
               </Button>
             </div>
             <div className="flex flex-col gap-2 pt-4">
-              <Button onClick={undo} className="bg-[#4a90e2] text-white">Deshacer</Button>
-              <Button onClick={clearAll} className="bg-[#ff3b30] text-white">Limpiar</Button>
-              <Button onClick={saveImage} className="bg-[#6b46a3] text-white">Guardar</Button>
+              <Button onClick={undo} className="rounded-full px-4 py-2 bg-gradient-to-r from-sky-500 to-blue-600 text-white shadow hover:opacity-95 gap-2">
+                <FaUndo className="w-4 h-4" />
+                Deshacer
+              </Button>
+              <Button onClick={clearAll} className="rounded-full px-4 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white shadow hover:opacity-95 gap-2">
+                <FaTrashAlt className="w-4 h-4" />
+                Limpiar
+              </Button>
+              <Button onClick={saveImage} className="rounded-full px-4 py-2 bg-gradient-to-r from-purple-500 to-violet-600 text-white shadow hover:opacity-95 gap-2">
+                <FaSave className="w-4 h-4" />
+                Guardar
+              </Button>
             </div>
           </CardContent>
         </Card>
