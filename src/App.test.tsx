@@ -1,7 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import App from "./App";
 
-test("renderiza el título principal", () => {
+test("renderiza la vista inicial del mapa", async () => {
   render(<App />);
-  expect(screen.getByText(/Bienvenido a React/i)).toBeInTheDocument();
+  // La vista por defecto es MapaColombia y muestra el título "Explora Colombia"
+  expect(await screen.findByText(/Explora Colombia/i)).toBeInTheDocument();
 });
