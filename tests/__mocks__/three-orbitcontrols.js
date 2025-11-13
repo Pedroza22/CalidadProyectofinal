@@ -1,4 +1,3 @@
-export class OrbitControls {
-  constructor() {}
-  update() {}
-}
+module.exports = {
+  OrbitControls: function OrbitControls() {},
+};

@@ -3,7 +3,7 @@
 import "@testing-library/jest-dom";
 import { TextEncoder, TextDecoder } from "util";
 
-jest.setTimeout(15000);
+jest.setTimeout(30000);
 
 // Polyfill para TextEncoder/TextDecoder
 if (typeof global.TextEncoder === "undefined") {
