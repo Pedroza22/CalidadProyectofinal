@@ -305,6 +305,16 @@ export default function Pintura3D() {
 
   return (
     <div className="space-y-6">
+      <div className="text-center space-y-3">
+        <h1 className="text-5xl md:text-6xl font-extrabold bg-gradient-to-r from-[#c147e9] via-[#7df9ff] to-[#ffdd00] bg-clip-text text-transparent">
+          Pintura3D
+        </h1>
+        <div className="max-w-3xl mx-auto text-[#e7d7ff] text-sm md:text-base leading-relaxed">
+          <div>🎨 ¡Bienvenido a Pinta3D!</div>
+          <div>Aquí podrás crear dibujos que flotan en el aire, mezclar colores mágicos y ver tus obras desde todos los lados.</div>
+          <div>🚀 ¡Gira, pinta, imagina y deja volar tu creatividad!</div>
+        </div>
+      </div>
       <div className="grid grid-cols-1 lg:grid-cols-[300px_1fr] gap-6">
         <Card className="p-0 bg-gradient-to-br from-[#2d1b4e]/95 via-[#4a2c6d]/95 to-[#6b46a3]/95 border-[#c147e9] border-2">
           <CardContent className="p-4 space-y-4">
