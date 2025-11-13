@@ -4,6 +4,7 @@ import Layout from "../components/Layout";
 // Vistas activas
 import MapaColombia from "../views/MapaColombia";
 import SistemaSolar from "../views/SistemaSolar";
+import Pintura3D from "../views/Pintura3D";
 
 export default function AppRoutes() {
   return (
@@ -12,6 +13,7 @@ export default function AppRoutes() {
         <Route index element={<MapaColombia />} />
         <Route path="mapa-colombia" element={<MapaColombia />} />
         <Route path="sistema-solar" element={<SistemaSolar />} />
+        <Route path="pintura-3d" element={<Pintura3D />} />
       </Route>
       <Route path="/sistema-solar-full" element={<SistemaSolar />} />
     </Routes>

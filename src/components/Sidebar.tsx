@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { NavLink } from "react-router-dom";
-import { FaSun, FaMap } from "react-icons/fa";
+import { FaSun, FaMap, FaPaintBrush } from "react-icons/fa";
 
 interface SidebarItem {
   label: string;
@@ -11,6 +11,7 @@ interface SidebarItem {
 const mainItems: SidebarItem[] = [
   { label: "Mapa Colombia", route: "/mapa-colombia", icon: <FaMap /> },
   { label: "Sistema Solar", route: "/sistema-solar", icon: <FaSun /> },
+  { label: "Pintura 3D", route: "/pintura-3d", icon: <FaPaintBrush /> },
 ];
 
  
