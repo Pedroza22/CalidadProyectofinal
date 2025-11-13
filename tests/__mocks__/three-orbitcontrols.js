@@ -1,3 +1,1 @@
-module.exports = {
-  OrbitControls: function OrbitControls() {},
-};
+export function OrbitControls() {}
