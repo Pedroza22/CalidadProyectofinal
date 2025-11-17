@@ -1,0 +1,112 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Calidad Proyecto Final API",
+    "version": "1.0.0",
+    "description": "API para probar datos de Sistema Solar y Departamentos de Colombia"
+  },
+  "servers": [
+    { "url": "/" }
+  ],
+  "paths": {
+    "/api/planets": {
+      "get": {
+        "summary": "Lista de planetas",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Planet" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/planets/{name}": {
+      "get": {
+        "summary": "Detalle de planeta por nombre",
+        "parameters": [
+          { "name": "name", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Planet" } } }
+          },
+          "404": { "description": "No encontrado" }
+        }
+      }
+    },
+    "/api/departamentos": {
+      "get": {
+        "summary": "Lista de departamentos",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": { "$ref": "#/components/schemas/Departamento" }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/departamentos/{id}": {
+      "get": {
+        "summary": "Detalle de departamento por id",
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Departamento" } } }
+          },
+          "404": { "description": "No encontrado" }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Planet": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "size": { "type": "number" },
+          "image": { "type": "string" },
+          "distance": { "type": "number" },
+          "diameter": { "type": "string" },
+          "distanceFromSun": { "type": "string" },
+          "orbitalPeriod": { "type": "string" },
+          "temperature": { "type": "string" },
+          "moons": { "type": "string" },
+          "info": { "type": "string" },
+          "funFact": { "type": "string" },
+          "isDwarf": { "type": "boolean" }
+        },
+        "required": ["name", "size", "image", "distance", "diameter", "distanceFromSun", "orbitalPeriod", "temperature", "moons", "info", "funFact"]
+      },
+      "Departamento": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "nombre": { "type": "string" },
+          "capital": { "type": "string" },
+          "region": { "type": "string" },
+          "poblacionAprox": { "type": "number" }
+        },
+        "required": ["id", "nombre", "capital", "region"]
+      }
+    }
+  }
+}
