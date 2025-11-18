@@ -13,6 +13,9 @@ dist
 dist-ssr
 *.local
 
+# JMeter results (CSV logs)
+tests/performance/*.jtl
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
