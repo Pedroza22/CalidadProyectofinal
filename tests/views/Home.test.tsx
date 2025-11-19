@@ -8,8 +8,7 @@ test("Home muestra el encabezado y los módulos", async () => {
       <Home />
     </MemoryRouter>
   );
-
-  expect(await screen.findByText(/Selecciona un módulo/i)).toBeTruthy();
+  expect(await screen.findByText(/Bienvenido/i)).toBeTruthy();
   expect(screen.getByText(/Mapa Colombia/i)).toBeTruthy();
   expect(screen.getByText(/Sistema Solar/i)).toBeTruthy();
   expect(screen.getByText(/Pintura 3D/i)).toBeTruthy();

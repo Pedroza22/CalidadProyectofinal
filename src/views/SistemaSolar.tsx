@@ -147,6 +147,20 @@ export default function SistemaSolar() {
   const scrollContainerRef = useRef<HTMLDivElement>(null)
   const [canScrollLeft, setCanScrollLeft] = useState(false)
   const [canScrollRight, setCanScrollRight] = useState(true)
+  const speakPlanet = (p: Planet) => {
+    try {
+      const synth = (window as any).speechSynthesis as SpeechSynthesis | undefined
+      if (!synth) return
+      const texto = `${p.name}. Diámetro: ${p.diameter}. Distancia al Sol: ${p.distanceFromSun}. Periodo orbital: ${p.orbitalPeriod}. Temperatura: ${p.temperature}. Lunas: ${p.moons}. ${p.info}. Dato curioso: ${p.funFact}.`
+      const u = new SpeechSynthesisUtterance(texto)
+      u.lang = "es-CO"
+      u.rate = 1
+      u.pitch = 1
+      u.volume = 1
+      synth.cancel()
+      synth.speak(u)
+    } catch {}
+  }
 
   useEffect(() => {
     const generatedStars = Array.from({ length: 150 }, () => ({
@@ -203,6 +217,14 @@ export default function SistemaSolar() {
 
     window.addEventListener("keydown", handleKeyPress)
     return () => window.removeEventListener("keydown", handleKeyPress)
+  }, [selectedPlanet])
+
+  useEffect(() => {
+    try {
+      const synth = (window as any).speechSynthesis as SpeechSynthesis | undefined
+      synth?.cancel()
+      if (selectedPlanet) speakPlanet(selectedPlanet)
+    } catch {}
   }, [selectedPlanet])
 
   return (
@@ -387,6 +409,27 @@ export default function SistemaSolar() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        speakPlanet(selectedPlanet)
+                      }}
+                      className="rounded-full px-3 py-2 bg-white/10 text-white hover:bg-white/20 border border-white/20 shadow-sm"
+                    >
+                      Escuchar 🔊
+                    </Button>
+                    <Button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        try {
+                          const synth = (window as any).speechSynthesis as SpeechSynthesis | undefined
+                          synth?.cancel()
+                        } catch {}
+                      }}
+                      className="rounded-full px-3 py-2 bg-white/10 text-white hover:bg-white/20 border border-white/20 shadow-sm"
+                    >
+                      Detener ⏹️
+                    </Button>
                     {planets.findIndex((p) => p.name === selectedPlanet.name) > 0 && (
                       <button
                         onClick={(e) => {
