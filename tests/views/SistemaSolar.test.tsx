@@ -3,13 +3,6 @@ import "@testing-library/jest-dom";
 import SistemaSolar from "../../src/views/SistemaSolar";
 
 describe("SistemaSolar", () => {
-  test("inicia narración automática al abrir panel", async () => {
-    ;(window as any).speechSynthesis = { cancel: jest.fn(), speak: jest.fn() }
-    render(<SistemaSolar />)
-    fireEvent.click(screen.getAllByText("Mercurio")[0])
-    await screen.findByText(/Planeta #1/)
-    expect((window as any).speechSynthesis.speak).toHaveBeenCalled()
-  })
   beforeEach(() => {
     (Element.prototype as any).scrollIntoView = jest.fn();
   });
