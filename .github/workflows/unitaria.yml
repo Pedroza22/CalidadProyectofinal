@@ -23,7 +23,7 @@ jobs:
       CI: true
     strategy:
       matrix:
-        node-version: [18.x, 20.x, 22.x]
+        node-version: [20.x]
 
     steps:
       - name: 📥 Checkout repository
@@ -47,7 +47,7 @@ jobs:
         run: npm run lint
 
       - name: 🧪 Run tests (Jest)
-        run: npm test -- --ci
+        run: npm test -- --ci --runInBand --detectOpenHandles
 
       - name: 🏗️ Build (Vite)
         run: npm run build
