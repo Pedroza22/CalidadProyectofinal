@@ -33,11 +33,21 @@ export default function Home() {
         <div className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-black mb-2 text-balance">
             <span className="bg-gradient-to-r from-[#ffd700] via-[#ff6b9d] to-[#c147e9] bg-clip-text text-transparent drop-shadow-[0_0_30px_rgba(255,107,157,0.5)]">
-              Bienvenido
+              ¡Bienvenido! Elije tu aventura✨
             </span>
           </h1>
-          <p className="text-lg text-[#e0c3fc]">Selecciona un módulo</p>
-          <p className="text-sm text-[#b8a3d8] mt-1">Explora las experiencias disponibles con una estética unificada.</p>
+          <p className="text-lg text-[#e0c3fc]">Toca un botón para empezar tu aventura.</p>
+          <p className="text-sm text-[#b8a3d8] mt-1">Aprende sobre Colombia, el espacio y el arte de una forma divertida.</p>
+          <div className="mt-8 flex justify-center">
+            <div className="relative inline-flex items-center justify-center animate-bounce">
+              <img
+                src="/earth-cute.svg"
+                alt="Planeta Tierra"
+                className="w-20 h-20 md:w-24 md:h-24 lg:w-28 lg:h-28 rounded-full animate-spin-slow"
+              />
+              <span className="gradient-ring" />
+            </div>
+          </div>
         </div>
 
         <div className="bg-gradient-to-r from-[#2d1b4e]/80 to-[#4a2c6d]/80 backdrop-blur-sm rounded-2xl p-6 border border-[#8b5cf6]/30">
