@@ -159,7 +159,7 @@ export default function SistemaSolar() {
       u.volume = 1
       synth.cancel()
       synth.speak(u)
-    } catch {}
+    } catch (err) { void err }
   }
 
   useEffect(() => {
@@ -224,7 +224,7 @@ export default function SistemaSolar() {
       const synth = (window as any).speechSynthesis as SpeechSynthesis | undefined
       synth?.cancel()
       if (selectedPlanet) speakPlanet(selectedPlanet)
-    } catch {}
+    } catch (err) { void err }
   }, [selectedPlanet])
 
   return (
@@ -424,7 +424,7 @@ export default function SistemaSolar() {
                         try {
                           const synth = (window as any).speechSynthesis as SpeechSynthesis | undefined
                           synth?.cancel()
-                        } catch {}
+                        } catch (err) { void err }
                       }}
                       className="rounded-full px-3 py-2 bg-white/10 text-white hover:bg-white/20 border border-white/20 shadow-sm"
                     >
