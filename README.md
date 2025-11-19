@@ -96,6 +96,8 @@ src/
 4. **ClickCounter.tsx**: Contador de clics persistente usando `localStorage`.
 5. **TodoList.tsx**: Lista de tareas con agregar y eliminar elementos.
 6. **TablasMul.tsx**: Tabla de multiplicar interactiva.
+7. **MapaColombia.tsx**: Vista offline para Ciencias Sociales con departamentos, regiones y actividades.
+8. **Social3DMap.tsx**: Mapa 3D educativo con rotación, zoom, selección y arrastrar/soltar de macro-regiones.
 
 ---
 
@@ -121,6 +123,27 @@ npm test
 
 * Se recomienda **investigar, analizar e interpretar cada ejercicio** antes de ejecutar pruebas unitarias.
 * Las pruebas serán evaluadas de manera **individual en clase**, considerando la explicación del proceso y la solución aplicada.
+
+### Mapa de Colombia (Offline)
+
+La vista de Mapa de Colombia funciona completamente sin internet:
+
+* Si agregas un archivo `public/colombia.svg`, se mostrará el mapa vectorial.
+* Si no existe el SVG, se usa un listado interactivo de departamentos, con filtro por región y búsqueda.
+* La última selección se guarda en `localStorage`.
+
+Sugerido: coloca un SVG simple del mapa de Colombia en `public/colombia.svg` para una experiencia más visual. También puedes ampliar los datos en `src/data/colombiaDepartamentos.ts`.
+
+### Mapa 3D de Regiones (Ciencias Sociales)
+
+Cumple los criterios del requerimiento EDU-RF-SOC-001:
+
+- Rotación y zoom con `OrbitControls`.
+- Selección y arrastrar/soltar de macro-regiones hacia un área de enfoque.
+- Visualización de 6 atributos por región: nombre, capital referente, población, idioma, superficie y economía clave.
+- Funcionamiento 100% offline usando datos locales (`src/data/socialRegions.ts`).
+
+Ruta: `/social-3d-map` y acceso desde el menú lateral.
 
 ---
 

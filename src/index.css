@@ -32,6 +32,24 @@
 .animate-twinkle { animation: twinkle 2s ease-in-out infinite; }
 .animate-pulse-slow { animation: pulseSlow 3s ease-in-out infinite; }
 
+/* Bounce (saltar) */
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-18px); }
+}
+.animate-bounce { animation: bounce 1.6s ease-in-out infinite; }
+.animate-spin-slow { animation: spin 12s linear infinite; }
+@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+.gradient-ring {
+  position: absolute;
+  inset: -6px;
+  border-radius: 9999px;
+  background: conic-gradient(from 0deg, #ffd700, #ff6b9d, #2dd4bf, #c147e9, #ffd700);
+  -webkit-mask: radial-gradient(circle, transparent 62%, black 62%);
+  mask: radial-gradient(circle, transparent 62%, black 62%);
+}
+
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 

@@ -5,6 +5,7 @@ import { Badge } from "../components/ui/badge";
 import { Button } from "../components/ui/button";
 import { Trophy, Star } from "lucide-react";
 import { DRAG_THRESHOLD, panFactor } from "./panUtils";
+import Starfield from "../components/Starfield";
 
 // Vista fusionada: Mapa SVG interactivo + panel de información
 // Al hacer clic en un departamento (en el SVG), se muestra su información.
@@ -235,8 +236,8 @@ export default function MapaColombia() {
           // Inyectar estilos para las clases de resaltado en modo inline
           const style = document.createElement('style');
           style.textContent = `.dept-hover { filter: brightness(1.06) drop-shadow(0 1px 0 rgba(0,0,0,0.2)); transition: filter 0.2s ease; }
-          .dept-selected { stroke: #10b981 !important; stroke-width: 4 !important; vector-effect: non-scaling-stroke; filter: drop-shadow(0 2px 0 rgba(0,0,0,0.4)) drop-shadow(0 10px 10px rgba(0,0,0,0.28)); transform: translateY(-1px) scale(1.012); transition: filter 0.2s ease, transform 0.2s ease; }
-          .label-selected { fill: #10b981; font-weight: 700; }`;
+          .dept-selected { stroke: #c147e9 !important; stroke-width: 4 !important; vector-effect: non-scaling-stroke; filter: drop-shadow(0 2px 0 rgba(0,0,0,0.4)) drop-shadow(0 10px 10px rgba(0,0,0,0.28)); transform: translateY(-1px) scale(1.012); transition: filter 0.2s ease, transform 0.2s ease; }
+          .label-selected { fill: #c147e9; font-weight: 700; }`;
           insertedSvg.appendChild(style);
         }
         // Si no se insertó correctamente o tiene tamaño 0, usar fallback con <object>
@@ -263,8 +264,8 @@ export default function MapaColombia() {
                 if (svg) {
                 const style = doc.createElement('style');
                 style.textContent = `.dept-hover { filter: brightness(1.06) drop-shadow(0 1px 0 rgba(0,0,0,0.2)); transition: filter 0.2s ease; }
-                .dept-selected { stroke: #10b981 !important; stroke-width: 3 !important; vector-effect: non-scaling-stroke; filter: drop-shadow(0 2px 0 rgba(0,0,0,0.35)) drop-shadow(0 8px 8px rgba(0,0,0,0.25)); transform: translateY(-1px); transition: filter 0.2s ease, transform 0.2s ease; }
-                .label-selected { fill: #10b981; font-weight: 700; }`;
+                .dept-selected { stroke: #c147e9 !important; stroke-width: 3 !important; vector-effect: non-scaling-stroke; filter: drop-shadow(0 2px 0 rgba(0,0,0,0.35)) drop-shadow(0 8px 8px rgba(0,0,0,0.25)); transform: translateY(-1px); transition: filter 0.2s ease, transform 0.2s ease; }
+                .label-selected { fill: #c147e9; font-weight: 700; }`;
                 svg.appendChild(style);
               }
 
@@ -869,8 +870,8 @@ export default function MapaColombia() {
               if (svg) {
                 const style = doc.createElement('style');
                 style.textContent = `.dept-hover { filter: brightness(1.06) drop-shadow(0 1px 0 rgba(0,0,0,0.2)); transition: filter 0.2s ease; }
-                .dept-selected { stroke: #10b981 !important; stroke-width: 4 !important; vector-effect: non-scaling-stroke; filter: drop-shadow(0 2px 0 rgba(0,0,0,0.4)) drop-shadow(0 10px 10px rgba(0,0,0,0.28)); transform: translateY(-1px) scale(1.012); transition: filter 0.2s ease, transform 0.2s ease; }
-                .label-selected { fill: #10b981; font-weight: 700; }`;
+                .dept-selected { stroke: #c147e9 !important; stroke-width: 4 !important; vector-effect: non-scaling-stroke; filter: drop-shadow(0 2px 0 rgba(0,0,0,0.4)) drop-shadow(0 10px 10px rgba(0,0,0,0.28)); transform: translateY(-1px) scale(1.012); transition: filter 0.2s ease, transform 0.2s ease; }
+                .label-selected { fill: #c147e9; font-weight: 700; }`;
                 svg.appendChild(style);
               }
 
@@ -1518,7 +1519,9 @@ export default function MapaColombia() {
   }, [zoom, pan]);
 
   return (
-    <div className="min-h-screen relative overflow-hidden bg-gradient-to-b from-[#1a0b2e] via-[#2d1b4e] to-[#4a2c6d] space-y-6 p-4 text-white">
+    <div className="min-h-screen relative overflow-hidden bg-gradient-to-b from-[#1a0b2e] via-[#2d1b4e] to-[#4a2c6d]">
+      <Starfield />
+      <div className="relative z-10 space-y-6 p-4 text-white">
       <header className="space-y-3">
         <div>
           <h1 className="text-4xl md:text-5xl font-black">
@@ -1577,27 +1580,27 @@ export default function MapaColombia() {
         </div>
       </header>
 
-      <section className="rounded-2xl border border-amber-200 dark:border-amber-800 bg-slate-900/60 backdrop-blur p-4 shadow relative z-0">
+      <section className="rounded-2xl border-2 border-[#c147e9] bg-gradient-to-br from-[#2d1b4e]/95 via-[#4a2c6d]/95 to-[#6b46a3]/95 backdrop-blur p-4 shadow relative z-0">
         {svgDisponible ? (
           <div className="w-full overflow-hidden" ref={panelRef} style={{ userSelect: 'none', touchAction: 'none' }}>
               <style>
               {`
               .dept-hover { filter: brightness(1.12) saturate(1.05) drop-shadow(0 1px 0 rgba(0,0,0,0.2)); transform: translateY(-1px); transition: transform 150ms ease, filter 150ms ease; }
-              .dept-selected { stroke: #10b981 !important; stroke-width: 4 !important; vector-effect: non-scaling-stroke; filter: drop-shadow(0 2px 0 rgba(0,0,0,0.4)) drop-shadow(0 10px 10px rgba(0,0,0,0.28)); transform: translateY(-1px) scale(1.012); transition: filter 150ms ease, transform 150ms ease; }
-              .label-selected { fill: #10b981; font-weight: 700; }
+              .dept-selected { stroke: #c147e9 !important; stroke-width: 4 !important; vector-effect: non-scaling-stroke; filter: drop-shadow(0 2px 0 rgba(0,0,0,0.4)) drop-shadow(0 10px 10px rgba(0,0,0,0.28)); transform: translateY(-1px) scale(1.012); transition: filter 150ms ease, transform 150ms ease; }
+              .label-selected { fill: #c147e9; font-weight: 700; }
               /* Hover directo para formas y textos del SVG */
               path:hover, polygon:hover, polyline:hover { filter: brightness(1.12) saturate(1.05); transform: translateY(-1px); transition: transform 150ms ease, filter 150ms ease; }
-              text:hover { fill: #16a34a; font-weight: 700; }
+              text:hover { fill: #ff6b9d; font-weight: 700; }
             `}
               </style>
             <div className="absolute left-4 top-4 z-20 flex items-center gap-2 mb-2 pointer-events-none">
               <Button
-                className="pointer-events-auto rounded-full px-3 py-2 bg-white/10 text-white hover:bg-white/20 border border-white/20 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                className="pointer-events-auto rounded-full px-3 py-2 bg-gradient-to-r from-[#ff6b9d] to-[#c147e9] hover:from-[#ff5588] hover:to-[#b037d9] text-white border-0 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#c147e9]"
                 onClick={() => setZoom((z)=>Math.min(3, parseFloat((z + 0.15).toFixed(2))))}
               >+
               </Button>
               <Button
-                className="pointer-events-auto rounded-full px-3 py-2 bg-white/10 text-white hover:bg-white/20 border border-white/20 shadow-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                className="pointer-events-auto rounded-full px-3 py-2 bg-gradient-to-r from-[#ff6b9d] to-[#c147e9] hover:from-[#ff5588] hover:to-[#b037d9] text-white border-0 shadow-sm focus:outline-none focus:ring-2 focus:ring-[#c147e9]"
                 onClick={() => setZoom((z)=>Math.max(0.5, parseFloat((z - 0.15).toFixed(2))))}
               >-
               </Button>
@@ -1733,6 +1736,7 @@ export default function MapaColombia() {
           <div className="text-white/70">Haz clic en el mapa o en la lista para ver detalles.</div>
         )}
       </section>
+      </div>
     </div>
   );
 }

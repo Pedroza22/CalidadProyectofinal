@@ -1,5 +1,6 @@
 // src/components/Navbar.tsx
 import React, { useEffect } from "react";
+import { FaUser } from "react-icons/fa";
 
 const Navbar: React.FC = () => {
   // Inicializa el tema al cargar
@@ -14,35 +15,24 @@ const Navbar: React.FC = () => {
     }
   }, []);
 
-  const toggleTheme = () => {
-    const root = document.documentElement;
-    const next = root.classList.toggle("dark") ? "dark" : "light";
-    localStorage.setItem("theme", next);
-    // Notifica a la app para que vistas activas reaccionen en vivo
-    document.dispatchEvent(new CustomEvent("theme:changed", { detail: { theme: next } }));
-  };
+  // Se elimina el botón de tema según requerimiento.
 
   return (
-    <header className="h-14 sticky top-0 z-10 bg-white/70 dark:bg-slate-900/60 backdrop-blur border-b border-slate-200 dark:border-slate-800">
+    <header className="h-14 sticky top-0 z-10 bg-gradient-to-r from-[#2d1b4e]/80 to-[#4a2c6d]/80 backdrop-blur border-b border-[#c147e9]/40">
       <div className="container mx-auto px-4 h-full flex items-center justify-between">
-        {/* Lado izquierdo: logo + marca */}
-        <div className="flex items-center gap-2 font-semibold text-slate-800 dark:text-slate-100">
-          <div className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-emerald-500 text-white">
-            U
-          </div>
-          <span>UCC : Prácticas Desarrollo</span>
+        {/* Lado izquierdo: icono de usuario */}
+        <div className="flex items-center gap-3">
+          <span
+            aria-label="Usuario"
+            className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-[#ff6b9d] to-[#c147e9] text-white shadow-[0_0_12px_rgba(193,71,233,0.4)]"
+          >
+            <FaUser />
+          </span>
+          <span className="text-[#e7d7ff] font-semibold tracking-wide">Colegio Mentes Creativas</span>
         </div>
 
-        {/* Lado derecho: botón de tema */}
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={toggleTheme}
-            className="px-3 py-1.5 rounded-lg bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900 hover:opacity-90 transition"
-          >
-            Tema
-          </button>
-        </div>
+        {/* Lado derecho: sin botón de tema */}
+        <div className="flex items-center gap-2" />
       </div>
     </header>
   );

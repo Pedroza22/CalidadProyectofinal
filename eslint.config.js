@@ -73,6 +73,21 @@ export default [
     },
   },
 
+  // Overrides para mocks CommonJS en tests (Node env)
+  {
+    files: ["tests/__mocks__/*.js"],
+    languageOptions: {
+      sourceType: "commonjs",
+      globals: {
+        require: "readonly",
+        module: "readonly",
+        exports: "readonly",
+        process: "readonly",
+        __dirname: "readonly",
+      },
+    },
+  },
+
   // Overrides para archivos de configuración CommonJS específicos
   {
     files: ["postcss.config.cjs"],
